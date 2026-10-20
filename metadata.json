@@ -1,0 +1,6 @@
+{
+  "name": "چکامه‌سرا | استودیو سلطنتی ترانه و سونو",
+  "description": "استاد هوشمند ادبیات، شعر و ترانه‌سرایی با رعایت دقیق وزن عروضی و قافیه به همراه مهندسی پرامپت حرفه‌ای برای ساخت آهنگ در Suno AI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
