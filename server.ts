@@ -295,7 +295,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 هر کلمه‌م پُلیه که دلهای بیدار رو به هم وصله!
 
 [Outro: Fading Vinyl Scratch, Rhodes Outro & Echoing Last Phrase]
-(تا انتهای قصه... ایستاده بر سرِ خاک... چکامه سرا...)`,
+(تا انتهای قصه... ایستاده بر سرِ خاک... ترانه سرای فرخزاد...)`,
       },
 
       // 1. Dark London & Tehran Drill
@@ -353,7 +353,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 دستاتو ببر بالا، فریاد بزن از دل و جان!
 
 [Outro: Reversed Guitar Melody, Sliding 808 Dying Out & Guttural Last Bar]
-(تا ابد بیدار... دریل ایران... چکامه سرا...)`,
+(تا ابد بیدار... دریل ایران... ترانه سرای فرخزاد...)`,
       },
 
       // 2. Melodic Cloud & Emo Rap
@@ -412,7 +412,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 راهِ ما تا صبحِ روشن ادامه داره هر دم!
 
 [Outro: Delicate Guitar Plucks, Distant Echoes & Rain Ambience Fading]
-(تا سپیده دم... با امید... چکامه سرا...)`,
+(تا سپیده دم... با امید... ترانه سرای فرخزاد...)`,
       },
 
       // 3. Oriental Persian Fusion Rap with Setar & Kamancheh
@@ -471,7 +471,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 پر می‌کشیم تا آسمانِ اوج و سرفراز!
 
 [Outro: Delicate Setar Trill, Heavy Last Kick & Vinyl Stop FX]
-(جاودانه باد ایران... چکامه سرا...)`,
+(جاودانه باد ایران... ترانه سرای فرخزاد...)`,
       },
 
       // 4. Hardcore Street & Protest Rap
@@ -530,7 +530,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 آزادی تو خونِ ما جریان داره تا ابد!
 
 [Outro: Screeching Guitar Feedback, Dying 808 & Last Pounding Kick]
-(تا پیروزی... تسلیم ناپذیر... چکامه سرا...)`,
+(تا پیروزی... تسلیم ناپذیر... ترانه سرای فرخزاد...)`,
       },
 
       // 5. West Coast G-Funk
@@ -587,7 +587,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 دستاتو ببر بالا با این ریتمِ دلنشین!
 
 [Outro: Whining Synth Lead Fading, Bass Plucks & Warm Chords]
-(G-Funk همیشه جاریه... چکامه سرا...)`,
+(G-Funk همیشه جاریه... ترانه سرای فرخزاد...)`,
       },
 
       // 6. Lo-Fi Late Night Jazz Rap
@@ -644,7 +644,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
 قهوهٔ تلخ و دلِ روشن به صبحِ فردا!
 
 [Outro: Piano Chords Fading into Rain & Vinyl Noise]
-(شب آرام... چکامه سرا...)`,
+(شب آرام... ترانه سرای فرخزاد...)`,
       },
     ];
 
@@ -1266,7 +1266,7 @@ A timeless hymn of liberty beneath the starry skies!`);
     pLower.includes('بازگشت') ||
     pLower.includes('کوچ');
 
-  let chosenTitle = `چکامهٔ ماندگار: ${cleanedPromptTitle}`;
+  let chosenTitle = `ترانهٔ ماندگار: ${cleanedPromptTitle}`;
   let chosenNote = `ترانه‌ای سرشار از روایت داستانی و بار عاطفی در سبک پاپ مدرن و ارکسترال، با تمرکز بر پیوند روایی ابیات و پرهیز از واژگان تصنعی برای سونو.`;
   let chosenLyrics = '';
 
@@ -1321,7 +1321,90 @@ A timeless hymn of liberty beneath the starry skies!`);
 آرام بخواب مادرِ خوبم... مسافرت بی‌تو غریب ماند...`;
   } else {
     chosenTitle = `قصهٔ ناگفته: ${cleanedPromptTitle}`;
-    chosenLyrics = `[Intro: Atmospheric Grand Piano Intro, Ambient Electric Guitar Shimmers & Subtle Cello]
+    const isEpicStory = (songType || '').includes('داستانی') || (songType || '').includes('storytelling');
+    const isChaharPareh = (songType || '').includes('چهارپاره') || (songType || '').includes('chahar');
+    const isCrescendo = (songType || '').includes('کرشندو') || (songType || '').includes('crescendo');
+
+    if (isEpicStory) {
+      chosenLyrics = `[Prologue: Atmospheric Grand Piano Intro, Ambient Electric Guitar Shimmers & Subtle Cello]
+
+[Act 1: Setting the Scene & Dilemma - ${englishVocalTag}]
+در گذرگاهِ شبی تاریک و پر راز و نیاز
+سفری آغاز شد با حسرت و سوز و گداز
+هر قدم در پیشِ رو یادآورِ دیروز بود
+شعله‌ای در سینه از یک حسرتِ جان‌سوز بود
+باد می‌آمد که تا سرّ نهان نجوا کند
+پرده از اسرارِ این دنیایِ غم وا کند
+قصهٔ ما قصه‌ای از جنسِ بودن یا گذشت
+ردّ پایی بر تنِ خاکستر و بر پهنهٔ دشت!
+
+[Chorus: Core Emotional Hook - Explosive Melodic Climax]
+باید از شب رد شد و خورشید را پیدا نمود!
+قفلِ سنگینِ هزاران سال غم را وا نمود!
+همسفر با من بیا تا انتهایِ این مسیر
+دستِ من در دستِ تو، در بندِ این رویا اسیر!
+روشنی می‌بارد از چشم‌اندازِ زیبایِ امید
+می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
+
+[Act 2: The Rising Conflict & Journey]
+رد شدیم از سنگلاخِ لحظه‌هایِ دل‌شکن
+با امیدی تازه در پس‌کوچه‌هایِ این وطن
+ماجرایی تازه رویید از نگاهِ آشنا
+زندگی جاری شد از آغازِ دشتِ روشنا
+
+[Act 3: The Turning Point & Dark Night of the Soul]
+سایه‌ها آمد به جنگِ باورِ بیدارِ ما
+سنگ انداختند در مسیرِ پاکِ این دیدارِ ما
+لیک پایمردی مرامِ عاشقانِ خسته نیست
+هیچ راهی پیشِ رویِ عزمِ ما بن‌بسته نیست!
+
+[Climax / Bridge: Emotional Breakthrough & Classical Guitar Solo]
+سفر اگرچه پر خطر، مقصد همان آبادی است
+پایانِ این قصه پر از نغمه‌هایِ شادی است!
+
+[Act 4: Cathartic Triumph & Final Hook]
+باید از شب رد شد و خورشید را پیدا نمود!
+قفلِ سنگینِ هزاران سال غم را وا نمود!
+روشنی می‌بارد از چشم‌اندازِ زیبایِ امید
+می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
+
+[Outro: Soft Piano Notes Fading with Distant String Pad]
+روایت ادامه دارد... تا رسیدن به نور... (ترانه سرای فرخزاد)`;
+    } else if (isChaharPareh) {
+      chosenLyrics = `[Stanza 1: Acoustic Nylon Guitar & Poetic Tone - ${englishVocalTag}]
+در گذرگاهِ شبی تاریک و پر راز و نیاز
+سفری آغاز شد با حسرت و سوز و گداز
+هر قدم در پیشِ رو یادآورِ دیروز بود
+شعله‌ای در سینه از یک حسرتِ جان‌سوز بود
+
+[Stanza 2: Deepening Narrative & Cello Entry]
+باد می‌آمد که تا سرّ نهان نجوا کند
+پرده از اسرارِ این دنیایِ غم وا کند
+قصهٔ ما قصه‌ای از جنسِ بودن یا گذشت
+ردّ پایی بر تنِ خاکستر و بر پهنهٔ دشت!
+
+[Refrain / Tarjea: Rhythmic Theme & Driving Strings]
+باید از شب رد شد و خورشید را پیدا نمود!
+قفلِ سنگینِ هزاران سال غم را وا نمود!
+همسفر با من بیا تا انتهایِ این مسیر
+دستِ من در دستِ تو، در بندِ این رویا اسیر!
+
+[Stanza 3: Plot Progression & Building Intensity]
+رد شدیم از سنگلاخِ لحظه‌هایِ دل‌شکن
+با امیدی تازه در پس‌کوچه‌هایِ این وطن
+ماجرایی تازه رویید از نگاهِ آشنا
+زندگی جاری شد از آغازِ دشتِ روشنا
+
+[Stanza 4: Climactic Revelation & Passion]
+هیچ بادی قایقِ این آرزوها را شکست
+تا که دستِ عشق آمد بر دلِ طوفان نشست!
+سفر اگرچه پر خطر، مقصد همان آبادی است
+پایانِ این قصه پر از نغمه‌هایِ شادی است!
+
+[Outro: Delicate Guitar Harmonics Fading into Room Reverb]
+روایت ادامه دارد... تا رسیدن به نور... (ترانه سرای فرخزاد)`;
+    } else {
+      chosenLyrics = `[Intro: Atmospheric Grand Piano Intro, Ambient Electric Guitar Shimmers & Subtle Cello]
 
 [Verse 1: ${englishVocalTag} - Storytelling Opening, Thoughtful & Poetic]
 در گذرگاهِ شبی تاریک و پر راز و نیاز
@@ -1360,7 +1443,8 @@ A timeless hymn of liberty beneath the starry skies!`);
 می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
 
 [Outro: Soft Piano Notes Fading with Distant String Pad]
-روایت ادامه دارد... تا رسیدن به نور...`;
+روایت ادامه دارد... تا رسیدن به نور... (ترانه سرای فرخزاد)`;
+    }
   }
 
   return {
@@ -1429,105 +1513,112 @@ async function callSelectedAIProvider(params: {
       };
     }
 
-    const modelToUse = (openrouterModel || '').trim() || 'meta-llama/llama-3.3-70b-instruct:free';
+    const primaryModel = (openrouterModel || '').trim() || 'meta-llama/llama-3.3-70b-instruct:free';
+    const fallbackModels = [
+      primaryModel,
+      ...(primaryModel !== 'meta-llama/llama-3.3-70b-instruct:free' ? ['meta-llama/llama-3.3-70b-instruct:free'] : []),
+      'google/gemma-2-9b-it:free',
+    ];
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+    let lastOpenRouterError = '';
+    const openRouterSystem = `${systemPrompt}\n\nIMPORTANT: You must output ONLY a valid JSON object matching the requested schema. Wrap the JSON in \`\`\`json ... \`\`\` code block. Do NOT include any conversation, markdown outside the json block, or greetings.`;
 
-      const openRouterSystem = `${systemPrompt}\n\nIMPORTANT: Output ONLY a valid raw JSON object matching the requested schema. No conversational preamble, and no markdown text outside the JSON object.`;
+    for (const modelToTry of fallbackModels) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 40000);
 
-      // Helper function to call OpenRouter with or without response_format
-      const executeCall = async (withJsonFormat: boolean) => {
-        const bodyPayload: any = {
-          model: modelToUse,
-          messages: [
-            { role: 'system', content: openRouterSystem },
-            { role: 'user', content: userMessage },
-          ],
-          temperature: 0.65,
-        };
-        if (withJsonFormat) {
-          bodyPayload.response_format = { type: 'json_object' };
-        }
-
-        return await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${key}`,
-            'HTTP-Referer': 'https://openrouter.ai/',
-            'X-Title': 'ChakamehSara AI Music Studio',
+            'HTTP-Referer': 'https://farrokhzad-studio.local',
+            'X-Title': 'Farrokhzad Songwriter Studio',
           },
-          body: JSON.stringify(bodyPayload),
+          body: JSON.stringify({
+            model: modelToTry,
+            messages: [
+              { role: 'system', content: openRouterSystem },
+              { role: 'user', content: userMessage },
+            ],
+            temperature: 0.65,
+          }),
           signal: controller.signal,
         });
-      };
 
-      let response = await executeCall(true);
+        clearTimeout(timeoutId);
 
-      // If model does not support response_format (common on some free models), retry immediately without it
-      if (!response.ok && response.status === 400) {
-        const errPeek: any = await response.clone().json().catch(() => ({}));
-        const errMsgPeek = (errPeek?.error?.message || '').toLowerCase();
-        if (errMsgPeek.includes('response_format') || errMsgPeek.includes('schema') || errMsgPeek.includes('json_object')) {
-          response = await executeCall(false);
+        if (!response.ok) {
+          const errJson: any = await response.json().catch(() => ({}));
+          lastOpenRouterError = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
+          console.warn(`[OpenRouter Warning] Model ${modelToTry} returned: ${lastOpenRouterError}`);
+          continue; // Try next fallback model
         }
-      }
 
-      clearTimeout(timeoutId);
+        const json: any = await response.json();
+        let content = json.choices?.[0]?.message?.content || '';
 
-      if (!response.ok) {
-        const errJson: any = await response.json().catch(() => ({}));
-        const errMsg = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
-        return {
-          success: false,
-          error: `خطا در ارتباط با اوپن‌روتر (${modelToUse}): ${errMsg}`,
-          source: `openrouter (${modelToUse})`,
-        };
-      }
+        if (content) {
+          // Strip DeepSeek R1 <think>...</think> reasoning tags
+          content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
-      const json: any = await response.json();
-      let content = json.choices?.[0]?.message?.content || '';
-
-      if (content) {
-        // Strip DeepSeek R1 <think>...</think> reasoning tags
-        content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-        
-        // Strip markdown code fences
-        const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-        try {
-          const parsed = JSON.parse(cleaned);
-          if (parsed.title && parsed.lyrics) {
-            return { success: true, result: parsed, source: `openrouter (${modelToUse})` };
-          }
-        } catch {
-          // Look for outer JSON object if extra text exists
-          const match = content.match(/\{[\s\S]*\}/);
-          if (match) {
-            try {
-              const parsed = JSON.parse(match[0]);
-              if (parsed.title && parsed.lyrics) {
-                return { success: true, result: parsed, source: `openrouter (${modelToUse})` };
-              }
-            } catch {
-              // Ignore
+          // Strip markdown code fences
+          const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+          try {
+            const parsed = JSON.parse(cleaned);
+            if (parsed.title && parsed.lyrics) {
+              return {
+                success: true,
+                result: parsed,
+                source: `openrouter (${modelToTry})`,
+                warning: modelToTry !== primaryModel ? `مدل اولیه پاسخگو نبود؛ ترانه با مدل پشتیبان (${modelToTry}) آفریده شد.` : undefined,
+              };
+            }
+          } catch {
+            // Look for outer JSON object if extra text exists
+            const match = content.match(/\{[\s\S]*\}/);
+            if (match) {
+              try {
+                const parsed = JSON.parse(match[0]);
+                if (parsed.title && parsed.lyrics) {
+                  return {
+                    success: true,
+                    result: parsed,
+                    source: `openrouter (${modelToTry})`,
+                    warning: modelToTry !== primaryModel ? `مدل اولیه پاسخگو نبود؛ ترانه با مدل پشتیبان (${modelToTry}) آفریده شد.` : undefined,
+                  };
+                }
+              } catch {}
             }
           }
         }
+      } catch (err: any) {
+        lastOpenRouterError = err?.message || 'اختلال شبکه یا تایم‌اوت';
+        console.warn(`[OpenRouter Catch] Model ${modelToTry}: ${lastOpenRouterError}`);
       }
-      return {
-        success: false,
-        error: `پاسخ دریافتی از مدل ${modelToUse} در اوپن‌روتر فرمت معتبر ترانه را بازنگرداند. لطفاً مجدداً امتحان کنید یا مدل دیگری را انتخاب فرمایید.`,
-        source: `openrouter (${modelToUse})`,
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        error: `خطای اتصال به اوپن‌روتر: ${err?.message || 'تایم‌اوت یا اختلال اینترنت'}`,
-        source: `openrouter (${modelToUse})`,
-      };
     }
+
+    // If OpenRouter calls all failed, try server-side Gemini fallback if key is present
+    if (process.env.GEMINI_API_KEY) {
+      const gemFallback = await callSelectedAIProvider({
+        provider: 'gemini',
+        systemPrompt,
+        userMessage,
+      });
+      if (gemFallback.success) {
+        return {
+          ...gemFallback,
+          warning: `مدل‌های اوپن‌روتر موقتاً با ترافیک بالا مواجه شدند (${lastOpenRouterError})؛ ترانه با هوش مصنوعی پشتیبان جِمِنای خلق شد.`,
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: `عدم امکان ارتباط با اوپن‌روتر: ${lastOpenRouterError || 'ترافیک بالای سرورهای هوش مصنوعی'}. لطفاً از مدل‌های پایدار مانند meta-llama/llama-3.3-70b-instruct:free استفاده کنید.`,
+      source: `openrouter (${primaryModel})`,
+    };
   }
 
   // 2. OpenAI (ChatGPT / GPT-4o-mini)
@@ -1818,18 +1909,18 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
     };
   }
 
-  // 2. Structural Narrative Arc Inspection (بررسی ساختار دراماتیک و روایی ترانه)
-  const hasIntro = lyrics.includes('[Intro');
-  const hasVerse1 = lyrics.includes('[Verse 1') || lyrics.includes('[Verse');
-  const hasChorus = lyrics.includes('[Chorus') || lyrics.includes('[Hook');
-  const hasVerse2 = lyrics.includes('[Verse 2');
-  const hasBridge = lyrics.includes('[Bridge');
-  const hasOutro = lyrics.includes('[Outro');
+  // 2. Structural Narrative Arc Inspection (بررسی ساختار دراماتیک و روایی ترانه متناسب با انواع ساختارها)
+  const hasIntro = lyrics.includes('[Intro') || lyrics.includes('[Prologue') || lyrics.includes('[Scene 1') || lyrics.includes('[Pishdaramad');
+  const hasPart1 = lyrics.includes('[Verse 1') || lyrics.includes('[Verse') || lyrics.includes('[Act 1') || lyrics.includes('[Bars 1') || lyrics.includes('[Stanza 1') || lyrics.includes('[Band 1');
+  const hasChorus = lyrics.includes('[Chorus') || lyrics.includes('[Hook') || lyrics.includes('[Refrain') || lyrics.includes('[Tarjea') || lyrics.includes('[Tasnif');
+  const hasPart2 = lyrics.includes('[Verse 2') || lyrics.includes('[Act 2') || lyrics.includes('[Scene 2') || lyrics.includes('[Bars 17') || lyrics.includes('[Stanza 2') || lyrics.includes('[Band 2') || lyrics.includes('[Bars 9-16');
+  const hasBridgeOrClimax = lyrics.includes('[Bridge') || lyrics.includes('[Act 3') || lyrics.includes('[Guitar Solo') || lyrics.includes('[Drop') || lyrics.includes('[Climax');
+  const hasOutro = lyrics.includes('[Outro') || lyrics.includes('[Epilogue') || lyrics.includes('[Act 4') || lyrics.includes('[Forood');
 
   let structureScore = 50;
-  if (hasVerse1 && hasChorus) structureScore += 20;
-  if (hasVerse2) structureScore += 15;
-  if (hasBridge) structureScore += 10;
+  if (hasPart1 && hasChorus) structureScore += 20;
+  if (hasPart2) structureScore += 15;
+  if (hasBridgeOrClimax) structureScore += 10;
   if (hasOutro) structureScore += 5;
 
   // 3. Analyze Rhymes & Endings (بررسی دقیق علم قافیه، جلوگیری از قافیه‌های تصنعی و تکرارهای غیرمجاز)
@@ -1905,12 +1996,12 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
 
   let narrativeScore = Math.round(structureScore * 0.45 + narrativeDepthRatio * 40 + 15);
   if (lines.length >= 24) narrativeScore += 6;
-  if (!hasVerse2) narrativeScore = Math.min(72, narrativeScore - 14); // Must have Verse 2 to be a full developed story
+  if (!hasPart2) narrativeScore = Math.min(72, narrativeScore - 14); // Must have Part 2 to be a full developed story
   narrativeScore = Math.min(99, Math.max(60, narrativeScore));
 
   // Overall Score & Strict Quality Threshold
   const overallScore = Math.round(rhymeScore * 0.35 + meterScore * 0.3 + narrativeScore * 0.35);
-  const passed = overallScore >= 77 && rhymeScore >= 72 && lines.length >= 18 && hasVerse2;
+  const passed = overallScore >= 77 && rhymeScore >= 72 && lines.length >= 18 && hasPart2;
 
   let verdict: 'عالی و تأییدشده' | 'خوب' | 'نیاز به بهینه‌سازی' = 'عالی و تأییدشده';
   if (overallScore < 76 || !passed) {
@@ -1922,11 +2013,11 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const cleanGenre = genre ? genre.split('(')[0].trim() : 'موسیقی';
   let notes = '';
   if (passed) {
-    notes = `سیستم اعتبارسنجی: ترانه دارای ابعاد کامل (${lines.length} سطر)، قافیه‌های طبیعی و هدفمند بدون کلمات وصله‌پینه‌ای است. داستان «${cleanGenre}» با پیوستگی معنایی دقیق از آغاز تا فرود روایت شده است.`;
-  } else if (lines.length < 18 || !hasVerse2) {
-    notes = `سیستم اعتبارسنجی: ترانه نیازمند بسط داستانی بیشتر است (${lines.length} سطر). برای روایت کامل قصه، سرایش ورس دوم با ماجرای جدید، کورس و بریج با حداقل ۲۰ تا ۳۲ مصراع الزامی است.`;
+    notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه با ساختار دراماتیک و غنی (${lines.length} سطر)، قافیه‌های طبیعی و هدفمند بدون کلمات زوری و پیوند استوار روایی در سبک «${cleanGenre}» تایید گردید.`;
+  } else if (lines.length < 18 || !hasPart2) {
+    notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه نیازمند بسط داستانی بیشتر است (${lines.length} سطر). برای روایت کامل قصه و جلوگیری از کوتاهی، بسط پرده دوم ماجرا و نقطه اوج اثر الزامی است.`;
   } else {
-    notes = `سیستم اعتبارسنجی: قافیه‌بندی یا پیوند مفهومی ابیات نیازمند صیقل بیشتر با خط داستانی موضوع است تا از کلمات زوری پرهیز شود.`;
+    notes = `مکتب ادبی ترانه‌سرای فرخزاد: قافیه‌بندی یا پیوند مفهومی ابیات نیازمند صیقل بیشتر با خط داستانی موضوع است تا از کلمات زوری پرهیز شود.`;
   }
 
   return {
@@ -1961,8 +2052,8 @@ async function startServer() {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${key}`,
-            'HTTP-Referer': 'https://openrouter.ai/',
-            'X-Title': 'ChakamehSara',
+            'HTTP-Referer': 'https://farrokhzad-studio.local',
+            'X-Title': 'Farrokhzad Songwriter Studio',
           },
           body: JSON.stringify({
             model: modelToTest,
@@ -2124,101 +2215,91 @@ async function startServer() {
 
     const randomNonce = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
-    const systemPrompt = `You are a world-renowned Persian music producer, master songwriter, and lyricist for Suno AI (v4).
-The user wants a brand-new song composition tailored specifically to:
-- Exact User Theme/Prompt: "${prompt}"
+    const systemPrompt = `You are the master engine of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio), inspired by the poetic audacity, intellectual depth, vivid imagery, and emotional truth of modern Persian literature (مکتب ادبی و جسارت هنری فروغ و فریدون فرخزاد) and world-class Suno AI (v4) music production.
+The user wants a brand-new, non-repetitive song composition tailored specifically to:
+- Exact User Theme/Story: "${prompt}"
 - Selected Music Genre / Style: "${musicGenre}"
 - Song Structure / Type: "${songStructure}"
 - Tempo & BPM: "${tempoBpm}"
 - Vocalist preference: "${vocalType}"
-- Mood: "${mood}"
+- Mood & Emotional Atmosphere: "${mood}"
 - Language(s): "${langString}"
 - Dynamic Nonce Seed: "${randomNonce}"
 
-CRITICAL GENRE-SPECIFIC INSTRUCTIONS:
-1. IF GENRE IS RAP OR HIP-HOP (رپ / هیپ‌هاپ / ترپ / دریل / بوم‌بپ / رپ ملودیک):
-   - You MUST write authentic, highly crafted Persian RAP lyrics with modern rhythmic flow (فلو), multi-syllabic rhymes (قافیه‌های چندسیلابی), internal rhymes (قافیه درونی), punchlines, and street poetry cadence.
-   - STRICT ANTI-CLICHE & PRECISION MANDATE (پرهیز قطعی از تکرار و جملات کلیشه‌ای رپ):
-     * NEVER use repetitive generic rap cliches (مانند «منم گرگ شب»، «تو خیابون خلوت»، «زخم خورده از روزگار»).
-     * Every single bar and sentence must be original, intellectually sharp, with fresh cultural metaphors, clever wordplay, and deep narrative purpose.
-     * Do NOT write traditional bookish couplets for Rap! Use bars and energetic rhythm.
-   - DIVERSE SUB-GENRE PRODUCTION & NEVER REPEAT THE SAME MUSIC PROMPT:
-     Analyze the user's specific theme, mood ("${mood}"), tempo ("${tempoBpm}"), and prompt to craft a UNIQUE, DIVERSE English "musicPrompt" tailored to one of these distinct styles:
-     * 90s Boom-Bap & Lyrical Rap: "90s Persian Boom Bap Hip Hop, Gritty Vinyl Sample Chops, Warm Rhodes Piano, Hard-Hitting Acoustic Snares, Fat Kick, DJ Scratches, Conscious Male Flow, Raw Underground Vibe, 90 BPM, D Minor"
-     * Menacing UK/Persian Drill: "Dark Persian Drill, Menacing Gliding 808 Bass, Fast Triplet Syncopated Hi-Hats, Distorted Classical Guitar Chops, Aggressive Punchy Snare, Intense Guttural Flow, Fast Cadence, 142 BPM, G Minor"
-     * Modern 808 Trap & Club: "Modern Persian Trap, Heavy Distorted 808 Sub-Bass, Crisp Claps, Ambient Bell Loops, Rapid Hi-Hat Rolls, High Energy Hype Delivery, 134 BPM, F Minor"
-     * Melodic / Emo Cloud Rap: "Persian Melodic Cloud Trap, Nostalgic Acoustic Nylon Guitar Pluck, Dreamy Reverb Synth Pads, Rolling Sub-Bass, Melodic Auto-Tuned Rap Vocal, Introspective Melancholic Mood, 118 BPM, C Minor"
-     * Oriental / Folk-Instrumental Fusion Rap: "Oriental Persian Hip Hop, Traditional Persian Setar & Kamancheh Samples, Cinematic String Stabs, Heavy Hip Hop Boom Bap Groove, Gritty Persian Spoken Delivery, Dramatic Middle Eastern Atmosphere, 94 BPM, E Minor"
-     * Hardcore / Political Street Rap: "Hardcore Persian Street Rap, Distorted 808 Overdrive, Raw Drum Kit, Menacing Electric Guitar Feedback, Fast Screaming Aggressive Flow, Heavy Moshpit Energy, 138 BPM, B Minor"
-     * Jazz-Hop / Lo-Fi Rap: "Persian Jazz Hop, Relaxed Lofi Hip Hop, Dusty Vinyl Crackle, Mellow Jazz Piano Chords, Upright Double Bass, Smooth Conversational Flow, Late Night Coffee Vibe, 84 BPM, B Flat Major"
-   - Section headers in lyrics MUST dynamically reflect the specific style:
-     e.g. for Drill: [Intro: Dark Reverb Guitar & 808 Glides], [Verse 1: Fast Triplet Drill Cadence], [Hook: Aggressive Vocal Drop], [Verse 2: Complex Internal Rhymes], [Bridge: Filtered Beat Breakdown], [Outro: Sliding 808 Fading Out]
-     e.g. for Boom Bap: [Intro: Vinyl Crackle & Jazz Piano Sample], [Verse 1: 16 Bars Boom Bap Flow], [Hook: Scratched Vocal Sample], [Verse 2: Storytelling Flow], [Bridge: Beat Muted, Spoken Bar], [Outro: Fading Beat & DJ Scratches]
-   - "poeticMeter": Dynamically specify the meter (e.g. "وزن هجایی ضربی دریل ۱۴۲ بی‌پی‌ام" or "بیت بوم‌بپ کلاسیک ۹۲ بی‌پی‌ام با فلو کلامی")
-   - "rhymeScheme": Dynamically specify (e.g. "قافیه‌های چندسیلابی جفتی و درونی با فلو پیوسته")
+══════════════════════════════════════════════════════════════════════
+1. STRICT ANTI-REPETITION MANDATE (پرهیز قطعی از تکرار در ترانه و پرامپت موزیک):
+══════════════════════════════════════════════════════════════════════
+- NEITHER the lyrics NOR the Suno "musicPrompt" may EVER be repetitive, templated, or generic!
+- FOR SUNO V4 "musicPrompt":
+  * NEVER output repetitive boilerplate prompts.
+  * Every single generation must feature a rich, surgical sound-design blueprint tailored specifically to "${musicGenre}", "${mood}", and the narrative of "${prompt}".
+  * Must include: Exact Primary & Secondary Micro-Genres (e.g. "Persian Alternative Rock, Post-Punk Revival"), Dynamic BPM, Musical Key Signature with Harmonic Modulation (e.g. "C Minor modulating to E-flat Major in Chorus"), Physical & Acoustic Sound Spaces (e.g. "Abbey Road Studio 2 acoustic room, vintage EMT 140 plate reverb, subtle tape flutter, 2-inch analog tape saturation, wide binaural stereo panorama"), Precise Instrument Roster (e.g. "1974 Fender Rhodes, Upright Double Bass, Yamaha C7 Concert Grand Piano, Distorted Moog Sub 37, Brushed Zildjian Cymbals, Solo Armenian Duduk"), and Specific Vocal Delivery & Processing (e.g. "Gritty soul-baring male chest voice, intimate close-mic whisper, layered multi-octave falsetto harmonies, zero autotune, subtle tube warmth").
+  * Comprehensive negative exclusions in "excludeStyles" (e.g. "mumble rap, cheerful synth brass, autotune artifacts, robotic monotone, elevator music").
+- FOR LYRICS:
+  * Do NOT repeat stanzas or use empty, repetitive chanting loops that replace narrative progression.
+  * Every single section must advance the dramatic tension, introduce a new perspective, or reveal a new emotional layer.
 
-2. IF GENRE IS ROCK OR METAL (راک / متال):
-   - Write fiery, powerful rock lyrics with emotional screams, raw attitude, and driving cadence.
-   - Section headers: [Intro: Distorted Electric Guitar Riff, Pounding Drums], [Verse 1: Gritty Rock Vocals], [Chorus: Explosive Stadium Rock Climax], [Guitar Solo: Shredding Electric Guitar], [Outro]
-   - "musicPrompt": "Persian Alternative Rock, Distorted Electric Guitars, Heavy Live Drums, Driving Bass, Raw Powerful Vocal, 134 BPM, E Minor"
+══════════════════════════════════════════════════════════════════════
+2. SANCTITY OF MEANING & STORYTELLING OVER RHYME (قداست معنا و داستان‌سرایی و پرهیز از قافیه زوری):
+══════════════════════════════════════════════════════════════════════
+- THE STORY IS AN UNBROKEN CAUSAL CHAIN: You MUST act like a master narrative poet from the very first word to the last. Every line must logically proceed from the preceding line and smoothly pave the way for the following line (زنجیره روایی و علّی خط به خط).
+- ABSOLUTE PROHIBITION ON FORCED OR NONSENSICAL RHYMES (پرهیز مطلق از کلمات زوری و وصله‌پینه‌ای صرفاً برای جور شدن قافیه):
+  * Under NO circumstances should you insert an archaic, clumsy, or irrelevant word just to force a rhyme!
+  * If a rhyme doesn't naturally and elegantly serve the story's meaning, REWRITE THE WHOLE LINE so that the ending rhyme word is familiar, musical, emotionally resonant, and indispensable to the thought.
+  * Rhymes must feel inevitable and organic, never forced.
 
-3. IF GENRE IS TRADITIONAL SONATI (سنتی و دستگاهی):
-   - Write classical Persian poetry (Ghazal / Tasnif) following Persian Dastgah (Shur, Homayoun, Isfahan, Chahargah, Mahur).
-   - Section headers: [Pishdaramad: Mystic Setar & Ney], [Avaz / Daramad: Classical Tahrir Vocal], [Tasnif: Rhythmic Daf & Tombak, Tar], [Forood]
-   - "musicPrompt": "Traditional Persian Classical Sonati, Dastgah Shur, Mystic Setar, Traditional Persian Ney, Daf, Tombak, Classical Tahrir Vocal, 76 BPM"
+══════════════════════════════════════════════════════════════════════
+3. DIVERSE SONG STRUCTURES (تنوع غنی در ساختارهای ۱۷ گانه ترانه):
+══════════════════════════════════════════════════════════════════════
+You must adapt your section headers (always in English in brackets) to the user's selected structure ("${songStructure}"):
+- If Epic 4-Act Storytelling (شاهکار روایی داستانی ۴ پرده‌ای):
+  [Prologue: Atmospheric Intro], [Act 1: Setting the Scene & Dilemma], [Chorus: Core Emotional Hook], [Act 2: The Rising Conflict & Plot Turn], [Act 3: The Dark Night of the Soul], [Climax / Bridge: Revelation & Breakthrough], [Act 4 / Resolution: Catharsis], [Outro: Lingering Epilogue]
+- If 32-Bar Cinematic Rap (رپ داستانی سناریومحور ۳۲ باری):
+  [Intro: Cinematic Dialogue & Ambient Beat], [Bars 1-8: Character & Context Setup], [Bars 9-16: Rising Tension & Complex Rhymes], [Hook: Explosive Vocal Sample Drop], [Bars 17-24: Narrative Twist & High Energy Flow], [Bars 25-32: Climactic Punchlines], [Breakdown: Filtered Beat & Spoken Realization], [Final Hook: Full Moshpit Drop], [Outro: Fading Beat & Vinyl Scratch]
+- If Modern Chahar-Pareh (چهارپاره نوین ادبی):
+  [Stanza 1: Poetic Imagery & Setup], [Stanza 2: Deepening Dilemma], [Refrain / Tarjea: Rhythmic Theme], [Stanza 3: Turning Point], [Stanza 4: Climactic Emotion], [Outro: Melodic Resolution]
+- If She'er Nou Nimai (شعر نو نیمایی آهنگین):
+  [Movement 1: Free Metrical Opening], [Melodic Theme: Rhythmic Progression], [Movement 2: Shifting Line Lengths & Emotion], [Crescendo: Climax of Thought], [Resolution: Poetic Stillness]
+- If Orchestral Crescendo Ballad (بالاد ارکسترال کرشندو با اوج‌گیری پیوسته):
+  [Intro: Intimate Grand Piano & Solo Cello], [Verse 1: Soft Breathy Delivery], [Pre-Chorus: Subtle Violins Entering], [Chorus: Moderate Emotional Surge], [Verse 2: Full Rhythm Section], [Bridge: Massive Orchestral Crescendo], [Final Chorus: Explosive Passionate Peak], [Outro: Lingering Piano Echoes]
+- If Rock Anthem with Solo (راک آنتم با سولو گیتار الکتریک):
+  [Intro: Heavy Distorted Electric Guitar Riff], [Verse 1: Gritty Rock Vocals], [Chorus: Explosive Stadium Anthem], [Verse 2: Driving Live Drums], [Guitar Solo: Screaming Virtuosity & Wah-Wah], [Bridge: Half-Time Breakdown], [Final Chorus: Key Modulation & High Octane Screams], [Outro: Feedback & Final Crash]
+- If R&B Midnight Slow Jam (آر اند بی شبانه و اسلو جم):
+  [Intro: Warm Fender Rhodes & Vinyl Crackle], [Verse 1: Silky Smooth Delivery], [Chorus: Multi-layered Harmonies], [Verse 2: Deep Bass Groove], [Bridge: Soprano Saxophone Exchange], [Outro: Velvet Vocal Ad-libs Fading]
+- If 6/8 Bandari Celebration (پارتی شاد ۶/۸ بندری):
+  [Intro: Festive Ney-Anban Fanfare & Double Clapping], [Verse 1: High Energy Southern Folk], [Chorus: Explosive 6/8 Bandari Dance Drop], [Verse 2: Rapid Rhythmic Singing], [Percussion Solo: Synchronized Dammam & Tombak], [Final Chorus: Maximum Joyful Ululations], [Outro: Ney-Anban Flourish]
+- If Acoustic Unplugged (آنپلاگد آکوستیک خلوت):
+  [Intro: Fingerpicked Nylon Guitar & Room Tone], [Verse 1: Raw Close-Mic Vocals], [Chorus: Warm Melodic Resonance], [Verse 2: Added Woodwinds], [Bridge: Intimate Whispered Thought], [Outro: Fading Guitar Harmonics]
+- If Traditional Dastgah (سنتی دستگاهی):
+  [Pishdaramad: Mystic Setar & Ney], [Avaz / Daramad: Classical Tahrir Vocal], [Tasnif: Band 1], [Chorus / Tarjea], [Tasnif: Band 2], [Forood / Outro]
+- Default / Standard:
+  [Intro: English tag], [Verse 1: English vocal tag], [Chorus: English tag], [Verse 2: English vocal tag], [Bridge: English tag], [Final Chorus: English tag], [Outro: English tag]
 
-4. IF GENRE IS ELECTRONIC / EDM / HOUSE / SYNTHWAVE:
-   - Section headers: [Intro: Arpeggiated Analog Synth], [Build-Up: Rising Snare Roll], [Drop: Heavy Pumping Bassline & Synth Lead], [Outro]
-   - "musicPrompt": "Persian Melodic Techno, Progressive House, Driving Rolling Bassline, Analog Synths, Hypnotic Vocal, 126 BPM"
+══════════════════════════════════════════════════════════════════════
+4. DIVERSE MOODS & EMOTIONAL DEPTH (تنوع شگفت‌انگیز در حس و اتمسفر):
+══════════════════════════════════════════════════════════════════════
+Attune the vocabulary, emotional temperature, and acoustic atmosphere to "${mood}":
+- اگزیستانسیال و فلسفی: Philosophical inquiry into time, void, human dignity, existence, and destiny.
+- دلتنگی و غربت پاییزی: Autumnal melancholy, rain on cold windows, nostalgic yearning, distance from home.
+- خشمگین و عصیان‌گر: Roaring fury against injustice, unbroken defiance, uncompromising passion.
+- دلهره‌آور و تعلیق سینمایی: Ticking clock, shadows, suspense, tension, breath caught in the throat.
+- سوررئال و رویاگونه: Dreamscape logic, luminous metaphors, floating imagery, poetic paradoxes.
+- عاشقانه و احساسی: Deep intimacy, vulnerability, authentic devotion, sacred warmth.
+- غمگین و دلشکسته: Cathartic elegiac sorrow, profound grief, honoring true loss.
+- شاد و پایکوبی: Euphoric celebration, radiant optimism, infectious festive rhythm.
+- حماسی و ملی میهنی: Ancient heritage, majestic mountains, heroic resilience, eternal freedom.
+- عرفانی و صوفیانه: Ecstatic longing, spiritual transcendence, breaking earthly bonds.
 
-5. IF GENRE IS R&B / SOUL / LO-FI:
-   - Velvet nocturnal lyrics, smooth delivery, romantic or melancholic vibe.
-   - Section headers: [Intro: Fender Rhodes Piano, Vinyl Crackle], [Verse: Smooth Velvet Vocal], [Chorus: Rich Harmonized Vocals], [Outro: Saxophone Solo Fading]
-   - "musicPrompt": "Smooth Persian Neo-Soul R&B, Fender Rhodes, Warm Bass, Velvet Vocals, Soprano Sax, 82 BPM"
-
-6. IF GENRE IS FOLKLORIC / REGIONAL (بندری، لری، کردی، گیلکی):
-   - Use authentic regional rhythms (6/8 Bandari, Lori Sorna/Dohul, Kurdish Halparkeh).
-   - "musicPrompt": "Festive Persian Bandari Folk Dance, Ney-Anban, Dammam, High Energy Clapping, 130 BPM"
-
-CRITICAL SONGWRITING & LYRICAL QUALITY STANDARDS (دستورالعمل‌های حیاتی ترانه‌سرایی، اصالت شاعرانه و داستان‌سرایی پیوسته):
-1. STORYTELLING CHAIN & LOGICAL CONTINUITY (عملکرد مانند یک داستان‌گوی چیره دست از آغاز تا پایان):
-   - You MUST act like a master storyteller from the first word to the very last word of the song.
-   - THE UNBROKEN CAUSAL CHAIN: Every single line must logically connect to the preceding line and smoothly pave the way for the following line (زنجیره روایی و علّی خط به خط).
-   - The storyline must have a clear beginning (Verse 1), emotional hook (Chorus), narrative twist or progression (Verse 2), dramatic climax (Bridge), and lingering resolution (Outro).
-   - ZERO tolerance for disconnected thoughts, sudden mental leaps, or verses that don't belong to the core story of "${prompt}".
-
-2. ABSOLUTE PROHIBITION OF FORCED RHYMES OR NONSENSE WORDS (پرهیز مطلق از کلمات وصله‌پینه‌ای صرفاً برای جور کردن قافیه):
-   - THE MEANING OF THE SONG IS PARAMOUNT: Under NO circumstances should you use a strange, archaic, or irrelevant word just to force a rhyme!
-   - The rhyme word must be the most natural, emotive, impactful, and necessary word to conclude the line's thought (قافیه باید زاینده معنا و اوج اندیشه باشد).
-   - If a rhyme sounds forced or distorts the narrative meaning, restructure the entire line/couplet so that the ending rhyme word is familiar, musical, and genuinely rooted in the story.
-
-3. MAXIMUM PRECISION IN SUNO V4 MUSIC PROMPT (بالاترین دقت در مهندسی پرامپت موسیقی سونو):
-   - "musicPrompt" MUST be crafted with surgical production accuracy specifically tailored for Suno v4:
-     * Exact Primary & Secondary Sub-Genres (e.g. "Persian Melodic Pop, Cinematic Orchestral Ballad")
-     * Specific Vocal Timbre & Processing (e.g. "Warm Emotive Male Tenor, Intimate Close-Mic, Subtle Plate Reverb, Breathy Delivery, Zero Autotune")
-     * Detailed Instrument Palette (e.g. "Concert Grand Piano, Solo Cello Ostinato, 24-Piece String Section, Acoustic Nylon Guitar, Deep Sub-Bass, Soft Brushed Snare")
-     * Precise BPM & Musical Key (e.g. "84 BPM, 4/4 Time Signature, D Minor modulating to F Major in Chorus")
-     * Audio Engineering & Space (e.g. "Abbey Road Studio Master, Radio Quality, Wide Stereo Panorama, Analog Warmth")
-     * Comprehensive negative exclusions in "excludeStyles".
-
-4. STRICT FULL-LENGTH ARCHITECTURE - NEVER SHORT (قانون کمال ساختاری و طول استاندارد ترانه):
-   - The song MUST contain between 24 to 34 poetic lines (مصراع) and include ALL of the following sections in order:
-     * [Intro: English production & sound tag]: Cinematic prelude / atmospheric prologue setting the story's universe.
-     * [Verse 1: English vocal tag] (۶ الی ۸ مصراع): Establishing the story premise, characters, atmosphere, and initial dilemma.
-     * [Chorus: English tag] (۴ الی ۶ مصراع): The emotional core, heart of the theme, unforgettable hook.
-     * [Verse 2: English vocal tag] (۶ الی ۸ مصراع): Deepening the narrative, new events, plot progression, character evolution. (Do NOT repeat Verse 1!)
-     * [Chorus: English tag]: Grand emotional reinforcement.
-     * [Bridge: English tag] (۴ الی ۶ مصراع): Climax, turning point, dramatic revelation, philosophical realization.
-     * [Outro: English tag] (۴ الی ۶ مصراع): Resolution, lingering poetic closure, memorable final line.
-
-MANDATORY RULES FOR ALL GENRES:
-- Output 100% original, tailor-made lyrics for the user's topic: "${prompt}".
-- Section tags in lyrics MUST BE 100% IN ENGLISH inside brackets: [Intro], [Verse 1], [Chorus], [Verse 2], [Bridge], [Outro].
+══════════════════════════════════════════════════════════════════════
+5. STRICT FULL-LENGTH ARCHITECTURE - NEVER SHORT:
+══════════════════════════════════════════════════════════════════════
+- The song MUST contain between 24 and 34 poetic lines (مصراع). Truncated songs will fail the quality audit!
+- Section tags in lyrics MUST BE 100% IN ENGLISH inside brackets: [Intro: ...], [Verse 1: ...], [Chorus: ...], etc.
 - "musicPrompt", "tempoAndKey", "instrumentation", "excludeStyles" MUST BE 100% IN ENGLISH with surgical precision.
 - "lyrics" lines MUST be in the requested language(s): ${langString}.
 - "composerNote": A scholarly, warm note in literary Persian analyzing the meter, narrative story arc, poetic meaning, and musical arrangement.`;
 
-    const userMessage = `Create a COMPLETE, FULL-LENGTH, MASTERWORK SONG (حداقل ۲۴ الی ۳۴ مصراع شامل ورس ۱، کورس، ورس ۲، بریج و اوترو):
+    const userMessage = `Create a COMPLETE, FULL-LENGTH, MASTERWORK SONG for "ترانه سرای فرخزاد" (حداقل ۲۴ الی ۳۴ مصراع):
 Theme / Story Topic: "${prompt}"
 Music Genre: ${musicGenre}
 Song Structure: ${songStructure}
@@ -2228,11 +2309,11 @@ Mood: ${mood}
 Language: ${langString}
 Seed: ${randomNonce}
 
-CRITICAL MANDATES FOR MAXIMUM ACCURACY:
+CRITICAL MANDATES:
 1. Act like a master storyteller from the first line to the last. Every line MUST logically connect to the previous line and lead to the next line (زنجیره داستانی خط به خط).
-2. The meaning of the song is essential. DO NOT pick any word just to make a rhyme! If a rhyme doesn't fit the natural story, restructure the line.
-3. Provide the most accurate, detailed, and professional Suno v4 "musicPrompt" possible.
-4. Full length: Rich Verse 1 (6-8 lines), Chorus (4-6 lines), Verse 2 (6-8 lines), Bridge (4-6 lines), Outro (4-6 lines).
+2. The meaning of the song is essential. DO NOT pick any word just to make a rhyme! If a rhyme doesn't fit the natural story, restructure the entire line.
+3. Provide a completely original, non-repetitive, surgical Suno v4 "musicPrompt" (sub-genres, acoustic space, tape saturation, key modulation, exact instruments, vocal processing).
+4. Full length: Rich storytelling sections (minimum 24-34 lines total). Never truncate!
 ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversationHistory.slice(-3))}` : ''}`;
 
     // Execution with Rhyme, Meter & Narrative Validation & Automatic Retry Loop
@@ -2251,12 +2332,13 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         ? userMessage
         : `${userMessage}
 
-[RETRY MANDATE #${attemptsCount} - دستور اکید بازنویسی شاعرانه، افزایش طول و ارتقای قصه ترانه]:
+[RETRY MANDATE #${attemptsCount} - دستور اکید مکتب ترانه‌سرای فرخزاد: بازنویسی شاعرانه، افزایش طول و ارتقای قصه ترانه]:
 نسخه قبلی در سیستم اعتبارسنجی بک‌اند به دلیل کوتاهی بیش از حد یا ضعف در پیوند داستانی ابیات مردود شد (نمره قافیه: ${previousAudit?.rhymeScore || 65}، نمره وزن: ${previousAudit?.meterScore || 70}، نمره روایت: ${previousAudit?.narrativeScore || 60}).
 تذکرات الزامی بازنویسی:
-۱. ترانه نباید کوتاه باشد! یک اثر کامل و بلند (حداقل ۲۴ تا ۳۲ مصراع) شامل [Verse 1], [Chorus], [Verse 2], [Bridge], [Outro] بسرای.
+۱. ترانه نباید کوتاه باشد! یک اثر کامل و بلند (حداقل ۲۴ تا ۳۲ مصراع) متناسب با ساختار انتخابی بسرای.
 ۲. دقیقاً مثل یک شاعر و ترانه‌سرای مولف فکر کن و کل داستان «${prompt}» را با ظرافت و عمق روایت کن.
-۳. از آوردن کلمات بی‌ربط فقط برای جور کردن قافیه اکیداً پرهیز کن؛ هر مصراع باید دارای معنای منطقی، زیبا و زاینده‌ی روایت باشد. Seed: ${currentNonce}`;
+۳. از آوردن کلمات بی‌ربط فقط برای جور کردن قافیه اکیداً پرهیز کن؛ هر مصراع باید دارای معنای منطقی، زیبا و زاینده‌ی روایت باشد.
+۴. پرامپت موسیقی سونو اصلا نباید کلیشه‌ای و تکراری باشد؛ جزییات آکوستیک، مدولاسیون و سازبندی دقیق را درج کن. Seed: ${currentNonce}`;
 
       let aiResp: any = null;
 
@@ -2359,7 +2441,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       return res.status(400).json({ error: 'اطلاعات ترانه فعلی برای ویرایش موجود نیست.' });
     }
 
-    const editPrompt = `You are a Persian master songwriter and music producer for Suno AI (v4).
+    const editPrompt = `You are the master songwriter and music editor of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio) for Suno AI (v4).
 The user wants to EDIT and REFINE an existing song according to their specific instructions.
 
 Existing Song Title: "${currentSong.title}"
@@ -2372,18 +2454,18 @@ Current Suno Style Prompt:
 ${currentSong.musicPrompt}
 
 USER'S EDIT INSTRUCTION (دستور ویرایش مخاطب):
-"${instruction || 'قافیه‌ها را روان‌تر و قوی‌تر کن، وزن را دقیق‌تر ساز و بار عاطفی کلمات را ارتقا بده.'}"
+"${instruction || 'قافیه‌ها را روان‌تر و قوی‌تر کن، بار داستانی کلمات را تعمیق ببخش و پرامپت سونو را غنی‌تر ساز.'}"
 
 Target of Edit: ${targetField}
 
 REQUIREMENTS:
 1. Apply the user's modifications precisely while preserving the overall style, meter, and core story narrative of the song.
 2. UNBROKEN STORYTELLING CHAIN: Act like a master storyteller from start to finish. Every line must logically connect to the previous line and next line.
-3. ABSOLUTE BAN ON FORCED RHYMES: Never insert random words just to force a rhyme; meaning and narrative depth are paramount.
-4. DO NOT shorten the song! Maintain a rich, complete structure (at least 24 to 34 poetic lines) with [Intro], [Verse 1], [Chorus], [Verse 2], [Bridge], [Outro].
-5. Ensure flawless, organic Persian rhymes, rhythmic prosodic flow, and emotional truth.
-6. Keep English section headers in lyrics: [Intro], [Verse 1], [Chorus], [Verse 2], [Bridge], [Outro].
-7. Update "musicPrompt" in authentic English with surgical precision (sub-genre, vocal style, instruments, BPM, key, audio space).
+3. ABSOLUTE BAN ON FORCED RHYMES: Never insert random, archaic, or irrelevant words just to force a rhyme; meaning and narrative depth are paramount.
+4. DO NOT shorten the song! Maintain a rich, complete structure (at least 24 to 34 poetic lines) with authentic English section headers.
+5. STRICT ANTI-REPETITION: Keep lyrics and musicPrompt fresh, avoiding cliche repetitions or generic filler.
+6. Keep English section headers in lyrics: [Intro: ...], [Verse 1: ...], [Chorus: ...], [Verse 2: ...], [Bridge: ...], [Outro: ...].
+7. Update "musicPrompt" in authentic English with surgical precision (micro-genre, acoustic space, instruments, BPM, key, audio engineering).
 8. In "composerNote", explain in Persian what poetic and narrative modifications were made.`;
 
     const userMessage = `Edit and refine this song based on: "${instruction}". Return the complete updated JSON.`;
@@ -2434,6 +2516,245 @@ REQUIREMENTS:
     return res.json({ audit });
   });
 
+  // Dedicated Smart Rhyme Assistant Endpoint (دستیار قافیه هوشمند داستانی)
+  app.post('/api/rhyme-assistant', async (req, res) => {
+    const {
+      word = '',
+      contextLine = '',
+      lyrics = '',
+      genre = 'ترانه',
+      storyTheme = '',
+      openrouterApiKey = '',
+      openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+    } = req.body || {};
+
+    const cleanWord = word.replace(/[،.؛:!؟?«»"'\n\r]+/g, '').trim();
+    if (!cleanWord) {
+      return res.status(400).json({ error: 'کلمه مورد نظر برای یافتن قافیه مشخص نشده است.' });
+    }
+
+    // 1. Try Live AI Generation first if key exists
+    const apiKey = (openrouterApiKey || '').trim() || process.env.OPENROUTER_API_KEY;
+    if (apiKey) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        const aiPrompt = `You are a master Persian poet and songwriter specializing in literary craft, prosody, and rhyme (علم قافیه و اوزان عروضی).
+Song Genre: "${genre}"
+Story Narrative / Premise: "${storyTheme || 'روایت ترانه'}"
+Contextual Line: "${contextLine || ''}"
+Target Word for Rhyming: "${cleanWord}"
+
+TASK:
+Propose EXACTLY 3 powerful, authentic, poetic, and meaningful Persian rhymes for the word "${cleanWord}" that match the song's story.
+MANDATORY RULES:
+1. Every rhyme MUST carry a deep meaning that fits the song's story narrative and emotional arc.
+2. ABSOLUTELY NO forced, awkward, or nonsensical rhymes (پرهیز قطعی از قافیه زوری یا بی‌ربط).
+3. Provide a sample line (مصراع نمونه) showing how the rhyme harmonizes with the meter and theme.
+4. Explain in 1 short sentence why this rhyme enriches the story.
+
+Return ONLY a JSON object:
+{
+  "targetWord": "${cleanWord}",
+  "suggestions": [
+    {
+      "rhyme": "کلمه قافیه ۱",
+      "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه",
+      "sampleLine": "مصراع نمونه موزون دارای این قافیه"
+    },
+    {
+      "rhyme": "کلمه قافیه ۲",
+      "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه",
+      "sampleLine": "مصراع نمونه موزون دارای این قافیه"
+    },
+    {
+      "rhyme": "کلمه قافیه ۳",
+      "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه",
+      "sampleLine": "مصراع نمونه موزون دارای این قافیه"
+    }
+  ]
+}`;
+
+        const modelToTry = (openrouterModel || '').trim() || 'meta-llama/llama-3.3-70b-instruct:free';
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': 'https://farrokhzad-studio.local',
+            'X-Title': 'Farrokhzad Songwriter Studio',
+          },
+          body: JSON.stringify({
+            model: modelToTry,
+            messages: [{ role: 'user', content: aiPrompt }],
+            temperature: 0.5,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const json: any = await response.json();
+          let content = json.choices?.[0]?.message?.content || '';
+          content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+          content = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+          const parsed = JSON.parse(content);
+          if (parsed && Array.isArray(parsed.suggestions) && parsed.suggestions.length >= 2) {
+            return res.json({
+              targetWord: cleanWord,
+              suggestions: parsed.suggestions.slice(0, 3),
+              source: `openrouter (${modelToTry})`,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[Rhyme AI Warning] Falling back to smart Persian rhyming engine:', e);
+      }
+    }
+
+    // 2. High-Precision Smart Persian Algorithmic Rhyming Engine (Fall-through / instant response)
+    const RHYME_DICTIONARY: { [key: string]: Array<{ rhyme: string; meaning: string; sampleLine: string }> } = {
+      'ان': [
+        { rhyme: 'عصیان', meaning: 'سرکشی آگاهانه و ایستادگی شجاعانه در برابر ستم و سکوت', sampleLine: 'در جانِ شب افروخته شد شعله‌ی عصیان' },
+        { rhyme: 'پیمان', meaning: 'عهد و همبستگی ناگسستنی یاران برای عبور از گذرگاه‌های سخت', sampleLine: 'با نبض سحر بسته‌ایم این کهن پیمان' },
+        { rhyme: 'ایمان', meaning: 'باور راسخ قلبی به پیروزی روشنایی بر تاریکی در فرجام قصه', sampleLine: 'در سینه‌ی ما زنده بماند تبِ ایمان' },
+        { rhyme: 'طوفان', meaning: 'خروش و دگرگونی عظیم اجتماعی یا عاطفی در نقطه عطف ترانه', sampleLine: 'برمی‌کند از ریشه تبِ حادثه طوفان' },
+        { rhyme: 'میدان', meaning: 'عرصه نبرد و تجلی دلاوری و پایمردی قهرمان داستان', sampleLine: 'خالی نشود تا ابد از غیرت، میدان' },
+        { rhyme: 'باران', meaning: 'پاکی، طراوت و شسته‌شدن غبار اندوه پس از سال‌ها رنج', sampleLine: 'شسته تنِ شهر از غمِ دیرینه به باران' },
+      ],
+      'ار': [
+        { rhyme: 'شعله‌دار', meaning: 'فروزنده و پرحرارت در مسیر حقیقت و بیداری', sampleLine: 'بر دوش کشیدیم تبِ مشعلِ شعله‌دار' },
+        { rhyme: 'روزگار', meaning: 'گذر زمان و آزمون‌های تاریخی انسان در گذر از سختی‌ها', sampleLine: 'نقشی بزنیم از دلِ خود بر تنِ روزگار' },
+        { rhyme: 'انتظار', meaning: 'چشم به راهی امیدوارانه برای رسیدن به وصال و پیروزی', sampleLine: 'پایان رسد این تلخیِ جان‌کاهِ انتظار' },
+        { rhyme: 'یادگار', meaning: 'میراث جاودان عشق و افتخار برای آیندگان', sampleLine: 'از نامِ تو ماند به زمین تا ابد یادگار' },
+        { rhyme: 'شرار', meaning: 'جرقه و آتش شوق برای دگرگونی فضای داستان', sampleLine: 'افتد به دلِ تیرگی از شعله شرار' },
+        { rhyme: 'استوار', meaning: 'ایستادگی محکم همچون کوه در برابر تندباد حوادث', sampleLine: 'در معرکه ماندیم چنان صخره استوار' },
+      ],
+      'ور': [
+        { rhyme: 'غرور', meaning: 'عزت نفس و سرافرازی شکست‌ناپذیر انسان', sampleLine: 'بشکست در این هلهله‌ها قامت هر غرور' },
+        { rhyme: 'ظهور', meaning: 'پیدایش و طلوع فجر امید پس از تاریکی ممتد', sampleLine: 'نزدیک شد از مشرقِ جان لحظه‌ی ظهور' },
+        { rhyme: 'پرشور', meaning: 'انرژی خروشان و آتشین در کلام و حرکت انقلابی/عاشقانه', sampleLine: 'فریاد زند نغمه‌ی ما در شبِ پرشور' },
+        { rhyme: 'بلور', meaning: 'پاکی و درخشش زلال حقیقت و عواطف ناب', sampleLine: 'بشکاف تنِ سایه به الماسِ این بلور' },
+        { rhyme: 'صبور', meaning: 'شکیبایی دلاورانه تا رسیدن به مقصد و گشایش نهایی', sampleLine: 'در طوفان نلرزد دلِ آزاده و صبور' },
+      ],
+      'وش': [
+        { rhyme: 'خروش', meaning: 'فریاد رهایی و جوشش نامیرای روح در برابر بیداد', sampleLine: 'برخیز که پیچیده در این بادیه خروش' },
+        { rhyme: 'سروش', meaning: 'پیام‌آور الهام غیبی و نوید امیدبخش سحرگاهی', sampleLine: 'از عرش بیامد به دلِ شب‌زده سروش' },
+        { rhyme: 'باهوش', meaning: 'ذکاوت و موقعیت‌سنجی هوشمندانه در مسیر هدف', sampleLine: 'بیدار شو ای خفته در این دایره باهوش' },
+        { rhyme: 'به‌هوش', meaning: 'آگاهی و بیداری جمعی از خواب سنگین غفلت', sampleLine: 'ای همسفر خسته بیا باز شو به‌هوش' },
+      ],
+      'ید': [
+        { rhyme: 'امید', meaning: 'انگیزه حیات و بال‌های پرواز روح به سوی روشنایی', sampleLine: 'در جان بدمد بار دگر مژده‌ی امید' },
+        { rhyme: 'سپید', meaning: 'صبح روشن، صلح و رهایی از سیاهی شب', sampleLine: 'بر بامِ فلک بیرقِ آزادیِ سپید' },
+        { rhyme: 'خورشید', meaning: 'منبع ازلی روشنایی و آگاهی راستین بر فراز میهن', sampleLine: 'از قله برآید به جهان نغمه‌ی خورشید' },
+        { rhyme: 'نوید', meaning: 'بشارت و نوید پیروزی و گشایش در پایان شب', sampleLine: 'پیک سحری آورد از صبح نوید' },
+        { rhyme: 'پدید', meaning: 'آشکار شدن حق و هویدایی رازهای مکتوم دل', sampleLine: 'روشن شود این راستیِ گشته پدید' },
+      ],
+      'وز': [
+        { rhyme: 'پیروز', meaning: 'غلبه نهایی نور و عدالت بر تباهی و ستم', sampleLine: 'آید به سرانجام سرودی همه پیروز' },
+        { rhyme: 'شب‌سوز', meaning: 'شعله‌ای که پرده‌های تاریکی را به آتش می‌کشد', sampleLine: 'از برقِ نگاه تو دمد آتشِ شب‌سوز' },
+        { rhyme: 'جان‌سوز', meaning: 'عمق احساس و سوز نهفته در دردهای مشترک', sampleLine: 'سازد دلِ سنگین قفس از غزل جان‌سوز' },
+        { rhyme: 'هنوز', meaning: 'پایداری و تداوم تپش عشق و مبارزه در گذر سال‌ها', sampleLine: 'در سینه تپد نام تو پرشور هنوز' },
+      ],
+      'ام': [
+        { rhyme: 'قیام', meaning: 'خیزش همگانی برای کرامت و تحقق آرمان‌های انسانی', sampleLine: 'در دفتر تاریخ رقم خورد این قیام' },
+        { rhyme: 'پیام', meaning: 'رسالت رهایی و اندیشه جاری در ابیات برای بیداری', sampleLine: 'از نسلِ تبرخورده رسانید این پیام' },
+        { rhyme: 'مدام', meaning: 'استمرار بی‌پایان در راه عشق، هدف و پیمان', sampleLine: 'می‌بارد از این باده در این میکده مدام' },
+        { rhyme: 'فرجام', meaning: 'پایان درخشان و سربلند یک دوره تلخ و رنج‌آلود', sampleLine: 'پیروزی ما ثبت شود در خطِ فرجام' },
+        { rhyme: 'کلام', meaning: 'نفوذ واژه‌ها و قدرت روشنگری شعر و تکست رپ', sampleLine: 'اعجاز کند در شبِ ظلمت رخِ کلام' },
+      ],
+      'از': [
+        { rhyme: 'پرواز', meaning: 'اوج‌گیری و شکستن مرزهای محدودیت و حصارها', sampleLine: 'پر می‌کشد این باورِ ما تا به پرواز' },
+        { rhyme: 'سرافراز', meaning: 'غرور ملی و سرافرازی پس از غلبه بر مصائب', sampleLine: 'ای میهنِ ما تا ابد الدهر سرافراز' },
+        { rhyme: 'هم‌راز', meaning: 'همدم و همراه رازهای دل در مسیر دشوار', sampleLine: 'تنها تو شدی در شبِ این واقعه هم‌راز' },
+        { rhyme: 'دل‌نواز', meaning: 'زیبایی دلنشین و تسلی‌بخش روح ترانه', sampleLine: 'پژواک زند نغمه‌ی عشقی دل‌نواز' },
+        { rhyme: 'جانباز', meaning: 'فداکاری بی‌چشمداشت در راه باور و آرمان', sampleLine: 'در معرکه جان داد همان عاشق جانباز' },
+      ],
+      'نگ': [
+        { rhyme: 'هماهنگ', meaning: 'سازگاری و پیوستگی اجزای هستی و یاران در ریتم ترانه', sampleLine: 'با نبض زمان می‌زند این طبل هماهنگ' },
+        { rhyme: 'فرسنگ', meaning: 'طی کردن مسافت‌های طولانی در راه آرمان', sampleLine: 'کوتاه شود فاصله در این همه فرسنگ' },
+        { rhyme: 'بی‌درنگ', meaning: 'شجاعت و پرهیز از تردید در بزنگاه سرنوشت‌ساز', sampleLine: 'باید که شتابید در این راه بی‌درنگ' },
+        { rhyme: 'پررنگ', meaning: 'وضوح، درخشش و ماندگاری ردپای انسان در قصه', sampleLine: 'نقش قدمت بر در و دیوار شد پررنگ' },
+      ],
+      'ود': [
+        { rhyme: 'سرود', meaning: 'ترانه جاودان جمعی و طنین اراده توده‌ها', sampleLine: 'از حنجره‌ها سر بکشد نغمه و سرود' },
+        { rhyme: 'درود', meaning: 'سلام و ادای احترام به دلاوران و عاشقان راه آزادی', sampleLine: 'بر عزمِ بلند تو فرستیم هزاران درود' },
+        { rhyme: 'تار و پود', meaning: 'تار و پود جان و اساس هستی ترانه', sampleLine: 'آمیخته با عشقِ تو این مایه و تار و پود' },
+        { rhyme: 'بگشود', meaning: 'گشایش درهای بسته و پایان دوره خفقان', sampleLine: 'قفلِ شبِ سنگین را سحرگاه بگشود' },
+      ],
+      'ین': [
+        { rhyme: 'سرزمین', meaning: 'خاک پاک وطن و ریشه‌های هویتی و تاریخی انسان', sampleLine: 'روشن شود از غیرتِ ما خاکِ سرزمین' },
+        { rhyme: 'یقین', meaning: 'اطمینان قلبی خدشه‌ناپذیر به پیروزی حقیقت', sampleLine: 'باید که بیاید به دلت شعله‌ی یقین' },
+        { rhyme: 'آتشین', meaning: 'کلام پرشور، برانگیزاننده و نافذ در شنونده', sampleLine: 'فریاد زند این غزل از حنجره آتشین' },
+        { rhyme: 'نگین', meaning: 'زیبایی و درخشش گوهرین در میان تاریکی‌ها', sampleLine: 'بر تارکِ این عصر بدرخشد چو نگین' },
+      ],
+      'یر': [
+        { rhyme: 'دلیر', meaning: 'شجاعت و ایستادگی حماسی در برابر ناملایمات', sampleLine: 'خیزد به دفاع از وطنش شیرِ دلیر' },
+        { rhyme: 'مسیر', meaning: 'راه روشن حرکت به سوی هدف و مقصود متعالی', sampleLine: 'پیموده شود تا به افق وسعتِ این مسیر' },
+        { rhyme: 'تدبیر', meaning: 'خردمندی و هوشمندی در مدیریت بحران‌ها و موانع', sampleLine: 'باطل بکند مکر زمان را به تدبیر' },
+        { rhyme: 'زنجیر', meaning: 'شکستن بندها و محدودیت‌های تحمیلی بر آزادی', sampleLine: 'پاره کند اراده‌ی انسان همه زنجیر' },
+      ],
+      'ند': [
+        { rhyme: 'پیوند', meaning: 'اتحاد و همبستگی ناگسستنی دل‌ها در راه هدف', sampleLine: 'محکم گره خورده به هم این عشق و پیوند' },
+        { rhyme: 'سوگند', meaning: 'وفاداری و ایستادگی بر سر عهد و وفا تا آخرین نفس', sampleLine: 'با حرمت این خاک بخوردیم ما سوگند' },
+        { rhyme: 'الوند', meaning: 'نماد سرکشی، اصالت و استواری در برابر هجوم باد', sampleLine: 'سر برفراشته به افق قامتِ الوند' },
+        { rhyme: 'لبخند', meaning: 'شکوفایی شادی و امید بر لب رنج‌دیدگان پس از پیروزی', sampleLine: 'بر لب بنشیند به سحر غنچه‌ی لبخند' },
+      ],
+    };
+
+    // Find matching suffix key
+    let matchedSuggestions: Array<{ rhyme: string; meaning: string; sampleLine: string }> = [];
+    for (const suffix of Object.keys(RHYME_DICTIONARY)) {
+      if (cleanWord.endsWith(suffix)) {
+        matchedSuggestions = RHYME_DICTIONARY[suffix].filter(
+          (item) => item.rhyme !== cleanWord
+        );
+        break;
+      }
+    }
+
+    // If no direct key matched, try matching the last 2 letters
+    if (matchedSuggestions.length < 3) {
+      const last2 = cleanWord.slice(-2);
+      for (const [suffix, items] of Object.entries(RHYME_DICTIONARY)) {
+        if (suffix.slice(-1) === last2.slice(-1)) {
+          matchedSuggestions = [...matchedSuggestions, ...items.filter((i) => i.rhyme !== cleanWord)];
+          if (matchedSuggestions.length >= 3) break;
+        }
+      }
+    }
+
+    // Universal fallback if still needed
+    if (matchedSuggestions.length < 3) {
+      matchedSuggestions = [
+        {
+          rhyme: `هم‌نوای ${cleanWord}`,
+          meaning: 'هم‌آوایی و طنین هماهنگ با خط عاطفی ترانه',
+          sampleLine: `در این هجوم خستگی، شد جانِ من هم‌نوای ${cleanWord}`,
+        },
+        {
+          rhyme: `پژواکِ ${cleanWord}`,
+          meaning: 'انعکاس پیام مرکزی ترانه در ذهن و جهان پیرامون',
+          sampleLine: `پیچیده در دلِ افق، پژواکِ پرشکوهِ ${cleanWord}`,
+        },
+        {
+          rhyme: `تفسیرِ ${cleanWord}`,
+          meaning: 'تعمیق معنایی و بازخوانی شاعرانه مضمون اثر',
+          sampleLine: `با واژه‌ها رقم زدم تفسیرِ بی‌ریای ${cleanWord}`,
+        },
+      ];
+    }
+
+    return res.json({
+      targetWord: cleanWord,
+      suggestions: matchedSuggestions.slice(0, 3),
+      source: 'studio-rhyme-engine',
+    });
+  });
+
   // Keep compatibility for older endpoints
   app.post('/api/compose', async (req, res) => {
     const {
@@ -2475,7 +2796,7 @@ REQUIREMENTS:
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ChakamehSara Multi-AI Chatbot running on http://0.0.0.0:${PORT}`);
+    console.log(`Farrokhzad Songwriter Studio running on http://0.0.0.0:${PORT}`);
   });
 
   if (PORT !== 3000) {

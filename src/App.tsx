@@ -85,24 +85,31 @@ export interface OpenRouterModelPreset {
 
 export const OPENROUTER_FREE_MODELS: OpenRouterModelPreset[] = [
   {
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'متا لاما ۳.۳ ۷۰B (رایگان)',
+    desc: 'مدل پرقدرت متا با تسلط عالی بر وزن، قافیه، پایداری بالا و ادبیات فارسی',
+    badge: 'پیشنهادی · پایدارترین',
+    isFree: true,
+  },
+  {
+    id: 'google/gemma-2-9b-it:free',
+    name: 'گوگل گما ۲ ۹B (رایگان)',
+    desc: 'مدل پرسرعت و پایدار گوگل برای سرایش شعر و پرامپت‌نویسی سونو',
+    badge: 'پرسرعت · رایگان',
+    isFree: true,
+  },
+  {
+    id: 'minimax/minimax-m3.1-flash:free',
+    name: 'مینی‌مکس M3.1 فلش (رایگان)',
+    desc: 'مدل چابک و باهوش با درک غنی از صنایع ادبی و داستان‌سرایی',
+    badge: 'جدید · رایگان',
+    isFree: true,
+  },
+  {
     id: 'deepseek/deepseek-r1:free',
     name: 'دیپ‌سیک R1 (رایگان)',
     desc: 'تفکر عمیق و استدلال شاعرانه شاهکار و بسیار باهوش',
-    badge: 'پیشنهادی · رایگان',
-    isFree: true,
-  },
-  {
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
-    name: 'متا لاما ۳.۳ ۷۰B (رایگان)',
-    desc: 'مدل پرقدرت متا با تسلط عالی بر وزن، قافیه و ادبیات فارسی',
-    badge: 'محبوب · رایگان',
-    isFree: true,
-  },
-  {
-    id: 'google/gemini-2.0-flash-exp:free',
-    name: 'جمنای ۲.۰ فلش (رایگان)',
-    desc: 'سرعت فوق‌العاده بالا و درک دقیق ساختار پرامپت سونو',
-    badge: 'پرسرعت · رایگان',
+    badge: 'استدلال عمیق',
     isFree: true,
   },
   {
@@ -276,12 +283,21 @@ export const GENRE_OPTIONS = [
 
 // 2. SONG STRUCTURES
 export const SONG_TYPE_OPTIONS = [
+  { id: 'storytelling_epic', label: 'شاهکار روایی داستانی ۴ پرده‌ای (Four-Act Narrative Storytelling: Prologue, Rising Tension, Climax, Resolution)', short: 'روایی داستانی ۴ پرده‌ای' },
   { id: 'full_song', label: 'ترانه کامل با ورس، کورس و بریج (Full Song: Verse-Chorus-Bridge)', short: 'ترانه کامل استاندارد' },
+  { id: 'rap_storytelling', label: 'رپ داستانی سناریومحور ۳۲ باری (Narrative Storytelling Rap / 32 Bars Cinematic)', short: 'رپ داستانی سناریومحور' },
   { id: 'rap_bars', label: 'تکست رپ چند ورس با هوک و پانچ‌لاین (Rap Bars & Catchy Hook)', short: 'تکست رپ با هوک' },
+  { id: 'drill_sliding', label: 'دریل دارک با ساختار دراپ و اینترلود (Dark Drill: Gliding Bass, Triplets & Fast Hook)', short: 'دریل دارک با اسلاید' },
   { id: 'ghazal_tasnif', label: 'غزل، تصنیف و آواز دستگاهی (Ghazal & Traditional Tasnif)', short: 'تصنیف و آواز سنتی' },
-  { id: 'emotional_ballad', label: 'بالاد احساسی و ملودیک (Emotional Melodic Ballad)', short: 'بالاد احساسی' },
+  { id: 'chahar_pareh', label: 'چهارپاره نوین ادبی با تمپوی ملودیک (Modern Persian Chahar-Pareh Cycle)', short: 'چهارپاره نوین ادبی' },
+  { id: 'sheer_nou_nimai', label: 'شعر نو نیمایی آهنگین با ریتم آزاد (Nimai Modern Poetry with Free Melodic Cadence)', short: 'شعر نو نیمایی آهنگین' },
+  { id: 'rnb_slow_jam', label: 'اسلو جم و آر اند بی با آترو و بداهه‌خوانی (R&B Slow Jam with Vocal Ad-libs & Outro Fade)', short: 'اسلو جم آر اند بی' },
+  { id: 'rock_anthem_solo', label: 'راک ارکسترال با سولو گیتار الکتریک و اوج حماسی (Rock Anthem with Shredding Guitar Solo)', short: 'راک آنتم با سولو گیتار' },
+  { id: 'ballad_crescendo', label: 'بالاد احساسی با کرشندو و اوج ارکسترال (Cinematic Crescendo Ballad)', short: 'بالاد با کرشندو' },
   { id: 'anthem_march', label: 'سرود ملی و مارش باشکوه حماسی (National Anthem & March)', short: 'سرود ملی و مارش' },
   { id: 'club_dance_drop', label: 'ترک پارتی با دراپ الکترونیک (Dance Track & Drop)', short: 'پارتی با دراپ' },
+  { id: 'party_bandari_6_8', label: 'قطعه شاد پایکوبی ۶/۸ با کسر و نی‌انبان (Festive 6/8 Folkloric Dance with Drop)', short: 'شاد ۶/۸ پایکوبی نواحی' },
+  { id: 'acoustic_unplugged', label: 'آکوستیک آنپلاگد صمیمی گیتار/پیانو (Intimate Acoustic Unplugged & Spoken Word)', short: 'آکوستیک آنپلاگد صمیمی' },
   { id: 'diss_protest', label: 'دیس ترک و تکست اعتراضی طوفانی (Diss Track / Protest)', short: 'دیس ترک / اعتراضی' },
   { id: 'short_viral', label: 'ترانه کوتاه با هوک ویرال (Short Viral Hook)', short: 'هوک کوتاه ویرال' },
 ];
@@ -298,13 +314,18 @@ export const TEMPO_OPTIONS = [
 export const MOOD_OPTIONS = [
   { id: 'حماسی', label: 'حماسی و ملی میهنی (Epic & Patriotic)', short: 'حماسی و ملی' },
   { id: 'اعتراضی', label: 'اعتراضی، دارک و خیابانی (Protest & Street Gritty)', short: 'اعتراضی و خیابانی' },
-  { id: 'شاد', label: 'شاد و ریتمیک (جشن، عروسی و رقص)', short: 'شاد و پایکوبی' },
-  { id: 'احساسی', label: 'احساسی و عاشقانه (Romantic & Emotional)', short: 'احساسی و عاشقانه' },
-  { id: 'غمگین', label: 'غمگین، دلتنگی و اشکبار (Melancholic & Sad)', short: 'غمگین و دلتنگی' },
-  { id: 'انگیزشی', label: 'انگیزشی و پرانرژی (Hype & Motivational)', short: 'انگیزشی و پرقدرت' },
-  { id: 'نوستالژیک', label: 'نوستالژیک و خاطره‌انگیز (Nostalgic)', short: 'نوستالژیک' },
-  { id: 'آرامش‌بخش', label: 'آرامش‌بخش و ملو (Chill & Mellow)', short: 'آرامش‌بخش و ملو' },
-  { id: 'عرفانی', label: 'عرفانی و صوفیانه (Mystical & Spiritual)', short: 'عرفانی و صوفیانه' },
+  { id: 'اگزیستانسیال', label: 'عمیق، فلسفی و اگزیستانسیال (Existential & Thought-Provoking)', short: 'فلسفی و اگزیستانسیال' },
+  { id: 'دلتنگی_غربت', label: 'دلتنگی، غم پاییزی و غربت (Nostalgic Heartache & Autumn Melancholy)', short: 'دلتنگی و غربت پاییزی' },
+  { id: 'عصیانگر', label: 'خشمگین، پرحرارت و عصیان‌گر (Aggressive, Fiery Anger & Moshpit)', short: 'خشمگین و عصیان‌گر' },
+  { id: 'احساسی', label: 'احساسی، پرشور و عاشقانه پاک (Romantic, Passionate & Devoted)', short: 'عاشقانه و پرشور' },
+  { id: 'شاد', label: 'شاد و ریتمیک (جشن، عروسی و پایکوبی)', short: 'شاد و پایکوبی' },
+  { id: 'غمگین', label: 'غمگین، دل‌شکسته و اشکبار (Deep Melancholic & Heartbroken)', short: 'غمگین و دل‌شکسته' },
+  { id: 'انگیزشی', label: 'انگیزشی، تسخیرناپذیر و پیروز (Triumphant & Unstoppable Motivation)', short: 'انگیزشی و تسخیرناپذیر' },
+  { id: 'عرفانی', label: 'عرفانی، صوفیانه و کیهانی (Mystical, Transcendental & Cosmic)', short: 'عرفانی و کیهانی' },
+  { id: 'نوستالژیک', label: 'نوستالژیک و خاطره‌انگیز دهه ۵۰ و ۶۰ (Retro Golden Era Nostalgia)', short: 'نوستالژیک دهه ۵۰ و ۶۰' },
+  { id: 'تعلیق_سینمایی', label: 'دلهره‌آور، سینمایی و تعلیق‌برانگیز (Cinematic Thriller & Suspenseful)', short: 'دلهره‌آور و تعلیق' },
+  { id: 'سوررئال', label: 'سوررئال، رویاگونه و اثیری (Dreamy, Psychedelic & Surreal Ethereal)', short: 'سوررئال و رویاگونه' },
+  { id: 'آرامش‌بخش', label: 'آرامش‌بخش، ملو و شبانه (Nocturnal Chill, Mellow & Ambient Peace)', short: 'آرامش‌بخش و شبانه' },
 ];
 
 // 5. VOCALS
@@ -536,6 +557,23 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copiedMap, setCopiedMap] = useState<{ [key: string]: boolean }>({});
 
+  // Auto-retry Notification State (وضعیت بازتلاش خودکار با مدل پایدار جایگزین)
+  const [retryNotification, setRetryNotification] = useState<string | null>(null);
+
+  // Smart Rhyme Assistant State for Manual Lyric Editing (دستیار قافیه هوشمند داستانی)
+  const [rhymeAssistant, setRhymeAssistant] = useState<{
+    targetWord: string;
+    isLoading: boolean;
+    suggestions: Array<{ rhyme: string; meaning: string; sampleLine: string }>;
+    error?: string;
+    customInput: string;
+  }>({
+    targetWord: '',
+    isLoading: false,
+    suggestions: [],
+    customInput: '',
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -715,7 +753,7 @@ ${song.lyrics}
 =====================================================
 توضیحات آهنگساز و شاعر:
 ${song.composerNote}
-آفریده شده در استودیو هوشمند چکامه سرا
+آفریده شده در استودیو هوشمند ترانه سرای فرخزاد
 =====================================================`;
 
     saveSongToHistory(song, undefined, 'download');
@@ -804,6 +842,81 @@ ${song.composerNote}
       isAuditing: false,
       auditResult: song.qualityAudit,
     });
+    setRhymeAssistant({
+      targetWord: '',
+      isLoading: false,
+      suggestions: [],
+      error: undefined,
+      customInput: '',
+    });
+  };
+
+  const handleFetchRhymes = async (targetWord: string, contextLine?: string) => {
+    const clean = targetWord.replace(/[،.؛:!؟?«»"'\n\r\(\)\[\]]+/g, '').trim();
+    if (!clean || clean.length < 2) return;
+
+    setRhymeAssistant((prev) => ({
+      ...prev,
+      targetWord: clean,
+      isLoading: true,
+      error: undefined,
+    }));
+
+    try {
+      const res = await fetch('/api/rhyme-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: clean,
+          contextLine: contextLine || '',
+          lyrics: manualEditState?.lyrics || '',
+          genre: manualEditState?.originalSong.genre || selectedGenre,
+          storyTheme: manualEditState?.title || selectedMood,
+          openrouterApiKey: openrouterApiKey.trim(),
+          openrouterModel: openrouterModel.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        setRhymeAssistant((prev) => ({
+          ...prev,
+          targetWord: clean,
+          isLoading: false,
+          suggestions: data.suggestions,
+          error: undefined,
+        }));
+      } else {
+        setRhymeAssistant((prev) => ({
+          ...prev,
+          targetWord: clean,
+          isLoading: false,
+          suggestions: [],
+          error: data.error || 'قافیه‌ای برای این واژه یافت نشد.',
+        }));
+      }
+    } catch {
+      setRhymeAssistant((prev) => ({
+        ...prev,
+        targetWord: clean,
+        isLoading: false,
+        suggestions: [],
+        error: 'خطا در ارتباط با سرور دستیار قافیه.',
+      }));
+    }
+  };
+
+  const handleApplyRhymeToLyrics = (rhymeWord: string) => {
+    if (!manualEditState) return;
+    const wordToReplace = rhymeAssistant.targetWord;
+    const current = manualEditState.lyrics;
+
+    if (wordToReplace && current.includes(wordToReplace)) {
+      // Replace the last occurrence or occurrences
+      const updated = current.split(wordToReplace).join(rhymeWord);
+      setManualEditState((prev) => (prev ? { ...prev, lyrics: updated } : null));
+    } else {
+      setManualEditState((prev) => (prev ? { ...prev, lyrics: `${current}\n${rhymeWord}` } : null));
+    }
   };
 
   const handleAuditManualEdit = async () => {
@@ -986,8 +1099,13 @@ ${song.composerNote}
     }
     setIsLoading(true);
 
-    try {
-      const response = await fetch('/api/chat', {
+    const primaryModel = openrouterModel.trim() || 'meta-llama/llama-3.3-70b-instruct:free';
+    const fallbackModel = primaryModel === 'meta-llama/llama-3.3-70b-instruct:free'
+      ? 'google/gemma-2-9b-it:free'
+      : 'meta-llama/llama-3.3-70b-instruct:free';
+
+    const sendChatRequest = async (modelToUse: string) => {
+      return await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1001,77 +1119,116 @@ ${song.composerNote}
           language: langsToSend.join(' + '),
           provider: 'openrouter',
           openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: openrouterModel.trim() || 'deepseek/deepseek-r1:free',
+          openrouterModel: modelToUse,
           conversationHistory: activeSession.messages.slice(-6).map((m) => ({
             text: m.text || m.songResult?.title || '',
             role: m.sender === 'user' ? 'user' : 'model',
           })),
         }),
       });
+    };
 
-      const data = await response.json();
+    let response: Response | null = null;
+    let data: any = null;
+    let usedModel = primaryModel;
+    let isRetried = false;
 
+    try {
+      response = await sendChatRequest(primaryModel);
+      data = await response.json().catch(() => ({}));
+
+      // Check if primary call failed and automatic retry should trigger
       if (!response.ok || data.error) {
-        const errorMsg: ChatMessage = {
+        console.warn(`[Auto-Retry] Primary model ${primaryModel} failed. Automatically retrying once with stable fallback model ${fallbackModel}...`);
+        setRetryNotification(`اتصال با مدل اولیه (${primaryModel.split('/').pop()}) ناموفق بود؛ در حال تلاش مجدد خودکار با مدل پایدار جایگزین (${fallbackModel.split('/').pop()})...`);
+        isRetried = true;
+        usedModel = fallbackModel;
+
+        await new Promise((r) => setTimeout(r, 1200));
+
+        response = await sendChatRequest(fallbackModel);
+        data = await response.json().catch(() => ({}));
+      }
+    } catch (err: any) {
+      console.warn(`[Auto-Retry Catch] Primary model error: ${err?.message}. Retrying with ${fallbackModel}...`);
+      setRetryNotification(`خطای اتصال با مدل اولیه؛ در حال بازتلاش خودکار با مدل پشتیبان (${fallbackModel.split('/').pop()})...`);
+      isRetried = true;
+      usedModel = fallbackModel;
+
+      try {
+        await new Promise((r) => setTimeout(r, 1200));
+        response = await sendChatRequest(fallbackModel);
+        data = await response.json().catch(() => ({}));
+      } catch (err2: any) {
+        setRetryNotification(null);
+        const botErr: ChatMessage = {
           id: `bot-err-${Date.now()}`,
           sender: 'bot',
           timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-          error: data.error || 'خطا در ارتباط با سرویس هوش مصنوعی.',
-          failedProvider: data.provider || 'openrouter',
+          error: `خطای شبکه در ارتباط با سرور: ${err2?.message || 'مشکل اتصال اینترنت'}`,
+          failedProvider: 'openrouter',
         };
 
         setSessions((prev) =>
           prev.map((s) =>
             s.id === activeSession.id
-              ? {
-                  ...s,
-                  messages: [...s.messages, errorMsg],
-                }
+              ? { ...s, messages: [...s.messages, botErr] }
               : s
           )
         );
         return;
       }
+    } finally {
+      setRetryNotification(null);
+      setIsLoading(false);
+    }
 
-      if (data.result) {
-        const botMsg: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-          songResult: data.result,
-          source: data.source,
-          warning: data.warning,
-        };
-
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.id === activeSession.id
-              ? {
-                  ...s,
-                  messages: [...s.messages, botMsg],
-                }
-              : s
-          )
-        );
-      }
-    } catch (err: any) {
-      const botErr: ChatMessage = {
+    if (!response || !response.ok || data?.error) {
+      const errorMsg: ChatMessage = {
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-        error: `خطای شبکه در ارتباط با سرور: ${err?.message || 'مشکل اتصال'}`,
-        failedProvider: 'openrouter',
+        error: data?.error || 'خطا در ارتباط با سرویس هوش مصنوعی (حتی پس از تلاش مجدد با مدل پایدار جایگزین).',
+        failedProvider: data?.provider || 'openrouter',
       };
 
       setSessions((prev) =>
         prev.map((s) =>
           s.id === activeSession.id
-            ? { ...s, messages: [...s.messages, botErr] }
+            ? {
+                ...s,
+                messages: [...s.messages, errorMsg],
+              }
             : s
         )
       );
-    } finally {
-      setIsLoading(false);
+      return;
+    }
+
+    if (data.result) {
+      const warningNote = isRetried
+        ? `مدل اولیه به دلیل ترافیک بالا در دسترس نبود؛ سرایش با مدل پایدار جایگزین (${usedModel.split('/').pop()}) انجام شد.`
+        : data.warning;
+
+      const botMsg: ChatMessage = {
+        id: `bot-${Date.now()}`,
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+        songResult: data.result,
+        source: data.source || `openrouter (${usedModel})`,
+        warning: warningNote,
+      };
+
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeSession.id
+            ? {
+                ...s,
+                messages: [...s.messages, botMsg],
+              }
+            : s
+        )
+      );
     }
   };
 
@@ -1107,8 +1264,8 @@ ${song.composerNote}
       };
     }
     return {
-      label: 'Chakameh Studio Engine (موتور استودیو)',
-      short: 'استودیو',
+      label: 'ترانه سرای فرخزاد (موتور اختصاصی)',
+      short: 'استودیو فرخزاد',
       bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     };
   };
@@ -1135,10 +1292,10 @@ ${song.composerNote}
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-[#F4EFE6]">
-                    چکامه سرا · استودیو
+                    ترانه سرای فرخزاد
                   </h2>
                   <p className="text-[10px] text-[#8E8779]">
-                    ترانه‌سرایی چندسبکی و پرامپت سونو
+                    استودیو ترانه‌سرایی داستانی و پرامپت سونو
                   </p>
                 </div>
               </div>
@@ -1367,7 +1524,7 @@ ${song.composerNote}
 
               {/* Drawer Footer Info */}
               <div className="pt-3 border-t border-white/10 text-[11px] text-[#696357] text-center">
-                چت‌بات چندسبکی ترانه‌سرایی و سونو · نسخه فوق‌حرفه‌ای
+                استودیو ترانه‌سرایی فرخزاد · آفرینش شعر داستانی و مهندسی پرامپت سونو v4
               </div>
             </div>
           </aside>
@@ -1868,6 +2025,178 @@ ${song.composerNote}
               />
             </div>
 
+            {/* Smart Rhyme Assistant (دستیار قافیه هوشمند داستانی) */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#131626] to-[#10121F] border border-[#D4AF37]/45 space-y-3 shadow-md">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-[#F4EFE6] block">
+                      دستیار قافیه هوشمند (متناسب با داستان و وزن ترانه)
+                    </span>
+                    <span className="text-[10px] text-[#A69F91]">
+                      روی هر کلمه از ترانه کلیک کنید یا کلمه مورد نظر را بنویسید تا ۳ قافیه متناسب با قصه دریافت نمایید.
+                    </span>
+                  </div>
+                </div>
+
+                {rhymeAssistant.isLoading && (
+                  <span className="text-[11px] text-[#D4AF37] flex items-center gap-1 font-semibold">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>در حال یافتن ۳ قافیه هوشمند...</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Word Clicker: Line-ending words from current lyrics */}
+              {(() => {
+                const endingWords = manualEditState.lyrics
+                  .split('\n')
+                  .map((l) => l.trim())
+                  .filter((l) => l.length > 0 && !l.startsWith('[') && !l.startsWith('('))
+                  .map((l) => {
+                    const cleanL = l.replace(/[،.؛:!؟?«»"']+/g, '').trim();
+                    const words = cleanL.split(/\s+/);
+                    return { word: words[words.length - 1], line: l };
+                  })
+                  .filter((item, idx, arr) => item.word && item.word.length >= 2 && arr.findIndex(x => x.word === item.word) === idx)
+                  .slice(0, 14);
+
+                return (
+                  <div className="space-y-1.5 pt-1 border-t border-white/5">
+                    <span className="text-[11px] text-[#8E8779] block">
+                      کلمات انتهای ابیات ترانه شما (برای دریافت ۳ قافیه هوشمند روی کلمه کلیک کنید):
+                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {endingWords.map((item, idx) => {
+                        const isSelected = rhymeAssistant.targetWord === item.word;
+                        return (
+                          <button
+                            key={`${item.word}-${idx}`}
+                            type="button"
+                            onClick={() => handleFetchRhymes(item.word, item.line)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                              isSelected
+                                ? 'bg-[#D4AF37] text-[#090A0F] font-bold shadow-sm ring-1 ring-[#D4AF37]'
+                                : 'bg-[#181B28] text-[#E2DDD3] hover:text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/40'
+                            }`}
+                          >
+                            <span>{item.word}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Custom Word Search Row */}
+              <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                <input
+                  type="text"
+                  placeholder="یا نوشتن هر کلمه دیگر برای قافیه‌یابی هوشمند (مثلاً: خروش، طوفان، امید)..."
+                  value={rhymeAssistant.customInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRhymeAssistant((prev) => ({ ...prev, customInput: val }));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (rhymeAssistant.customInput.trim()) {
+                        handleFetchRhymes(rhymeAssistant.customInput.trim());
+                      }
+                    }
+                  }}
+                  className="flex-1 h-8 px-3 rounded-lg bg-[#0C0E16] border border-white/10 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-[#D4AF37]"
+                />
+                <button
+                  type="button"
+                  disabled={rhymeAssistant.isLoading || !rhymeAssistant.customInput.trim()}
+                  onClick={() => handleFetchRhymes(rhymeAssistant.customInput.trim())}
+                  className="h-8 px-3 rounded-lg bg-[#D4AF37] hover:bg-[#E5C354] disabled:opacity-40 text-[#090A0F] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>یافتن قافیه</span>
+                </button>
+              </div>
+
+              {/* Rhyme Suggestions Results Display */}
+              {rhymeAssistant.suggestions.length > 0 && (
+                <div className="pt-2 border-t border-white/10 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#D4AF37] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>۳ قافیه پیشنهادی با معنای داستانی برای «{rhymeAssistant.targetWord}»:</span>
+                    </span>
+                    <span className="text-[10px] text-[#8E8779]">
+                      برای اعمال در متن روی «جایگزینی در متن» کلیک کنید
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {rhymeAssistant.suggestions.map((sug, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2.5 rounded-xl bg-[#0B0D15] border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 transition-all flex flex-col justify-between gap-2 shadow-xs"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+                            <span className="text-sm font-bold text-[#F4EFE6] font-poetic">
+                              {sug.rhyme}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4AF37]/15 text-[#D4AF37] font-semibold">
+                              پیشنهاد #{idx + 1}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#A69F91] leading-relaxed mt-1.5">
+                            💡 <strong className="text-[#E2DDD3]">تناسب داستانی:</strong> {sug.meaning}
+                          </p>
+                          {sug.sampleLine && (
+                            <p className="text-[10px] text-[#8E8779] italic mt-1 bg-white/5 p-1.5 rounded-md font-poetic">
+                              📜 «{sug.sampleLine}»
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5">
+                          <button
+                            type="button"
+                            onClick={() => handleApplyRhymeToLyrics(sug.rhyme)}
+                            title="جایگزینی این قافیه در متن ترانه"
+                            className="flex-1 py-1 px-2 rounded-lg bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>جایگزینی در متن</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(sug.rhyme, `rhyme-sug-${idx}`)}
+                            title="کپی واژه قافیه"
+                            className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-[#D4AF37] cursor-pointer"
+                          >
+                            {copiedMap[`rhyme-sug-${idx}`] ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {rhymeAssistant.error && (
+                <div className="text-[11px] text-amber-300 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                  ⚠️ {rhymeAssistant.error}
+                </div>
+              )}
+            </div>
+
             {/* Live Backend Rhyme & Meter Validation Panel */}
             <div className="p-3.5 rounded-xl bg-[#121624] border border-[#D4AF37]/35 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2185,14 +2514,14 @@ ${song.composerNote}
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-base font-bold text-[#F4EFE6] tracking-tight">
-                  چکامه سرا · استودیو ترانه‌سرایی حرفه‌ای
+                  ترانه سرای فرخزاد
                 </h1>
                 <span className="hidden sm:inline-block text-[10px] bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/35 px-2 py-0.5 rounded-full font-bold">
-                  Suno v4 Pro
+                  مکتب ادبی فرخزاد · Suno v4 Pro
                 </span>
               </div>
               <p className="text-[11px] text-[#8E8779] hidden xs:block truncate max-w-sm sm:max-w-md">
-                سبک فعلی: <span className="text-[#D4AF37] font-semibold">{activeGenreObj.short}</span> · {selectedVocal.split('(')[0]} · {selectedLanguages.length > 1 ? `چندزبانه (${selectedLanguages.length})` : selectedLanguages[0]}
+                سبک: <span className="text-[#D4AF37] font-semibold">{activeGenreObj.short}</span> · ساختار: <span className="text-cyan-300 font-semibold">{selectedSongType.split('(')[0].trim()}</span> · حس: <span className="text-emerald-300 font-semibold">{selectedMood.split('(')[0].trim()}</span>
               </p>
             </div>
           </div>
@@ -2724,21 +3053,30 @@ ${song.composerNote}
             })
           )}
 
-          {/* Loading Animation */}
+          {/* Loading Animation & Retry State */}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl bg-[#11131E] border border-[#D4AF37]/40 p-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] animate-spin">
-                  <Music className="w-4 h-4" />
+              <div className="rounded-2xl bg-[#11131E] border border-[#D4AF37]/40 p-4 flex flex-col gap-2.5 max-w-lg shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] animate-spin shrink-0">
+                    <Music className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs">
+                    <span className="font-bold text-[#F4EFE6] block">
+                      شاعر و آهنگساز هوش مصنوعی ({getProviderBadge(openrouterModel).short}) در حال سرایش ترانه در سبک «{activeGenreObj.short}» است...
+                    </span>
+                    <span className="text-[#8E8779]">
+                      تنظیم وزن، ریتم، قافیه‌ها، تگ‌های تخصصی انگلیسی سونو و پرامپت اختصاصی موزیک
+                    </span>
+                  </div>
                 </div>
-                <div className="text-xs">
-                  <span className="font-bold text-[#F4EFE6] block">
-                    شاعر و آهنگساز هوش مصنوعی ({getProviderBadge(openrouterModel).short}) در حال سرایش ترانه در سبک «{activeGenreObj.short}» است...
-                  </span>
-                  <span className="text-[#8E8779]">
-                    تنظیم وزن، ریتم، قافیه‌ها، تگ‌های تخصصی انگلیسی سونو و پرامپت اختصاصی موزیک
-                  </span>
-                </div>
+
+                {retryNotification && (
+                  <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs flex items-center gap-2 animate-pulse">
+                    <RefreshCw className="w-4 h-4 animate-spin shrink-0 text-amber-400" />
+                    <span className="leading-relaxed font-semibold">{retryNotification}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
