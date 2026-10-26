@@ -2554,6 +2554,11 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       cloudflareModel = 'meta/muse-spark-open',
     } = req.body || {};
 
+    const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
+    const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
+    const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || 'meta/muse-spark-open').trim();
+
     if (!currentSong || !currentSong.lyrics) {
       return res.status(400).json({ error: 'اطلاعات ترانه فعلی برای ویرایش موجود نیست.' });
     }
@@ -2592,20 +2597,20 @@ REQUIREMENTS:
       userApiKey,
       openrouterApiKey,
       openrouterModel,
-      groqApiKey,
-      cloudflareApiToken,
-      cloudflareAccountId,
-      cloudflareModel,
+      groqApiKey: effectiveGroqKey,
+      cloudflareApiToken: effectiveCloudflareToken,
+      cloudflareAccountId: effectiveCloudflareAccount,
+      cloudflareModel: effectiveCloudflareModel,
       systemPrompt: editPrompt,
       userMessage,
     });
     if (!aiResp?.success && (provider === 'gemini' || !openrouterApiKey)) {
       if (groqApiKey) {
-        const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt: editPrompt, userMessage });
+        const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt: editPrompt, userMessage });
         if (fallback.success) aiResp = { ...fallback, warning: 'ویرایش Gemini ناموفق بود؛ ویرایش به‌صورت خودکار به Groq منتقل شد.' };
       }
       if (!aiResp?.success && cloudflareApiToken && cloudflareAccountId) {
-        const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt: editPrompt, userMessage });
+        const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken: effectiveCloudflareToken, cloudflareAccountId: effectiveCloudflareAccount, cloudflareModel: effectiveCloudflareModel, systemPrompt: editPrompt, userMessage });
         if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq برای ویرایش پاسخگو نبودند؛ ویرایش به Cloudflare منتقل شد.' };
       }
     }
