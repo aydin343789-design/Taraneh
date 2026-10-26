@@ -2437,45 +2437,25 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
 
       let aiResp: any = null;
 
-      if (provider === 'openrouter' || openrouterApiKey) {
+      // OpenRouter is intentionally disabled. Try the user's configured cloud providers directly.
+      if (effectiveGroqKey) {
         aiResp = await callSelectedAIProvider({
-          provider: 'openrouter',
-          openrouterApiKey,
-          openrouterModel,
+          provider: 'groq',
           groqApiKey: effectiveGroqKey,
-          cloudflareApiToken: effectiveCloudflareToken,
-          cloudflareAccountId: effectiveCloudflareAccount,
-          cloudflareModel: effectiveCloudflareModel,
-          userApiKey,
           systemPrompt,
           userMessage: attemptUserMsg,
         });
-      } else if (provider === 'claude' || provider === 'openai') {
-        aiResp = await callSelectedAIProvider({
-          provider,
-          userApiKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
-      } else if (provider === 'gemini') {
-        aiResp = await callSelectedAIProvider({
-          provider: 'gemini',
-          userApiKey,
-          groqApiKey: effectiveGroqKey,
+      }
+      if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
+        const fallback = await callSelectedAIProvider({
+          provider: 'cloudflare',
           cloudflareApiToken: effectiveCloudflareToken,
           cloudflareAccountId: effectiveCloudflareAccount,
           cloudflareModel: effectiveCloudflareModel,
           systemPrompt,
           userMessage: attemptUserMsg,
         });
-        if (!aiResp?.success && groqApiKey) {
-          const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt, userMessage: attemptUserMsg });
-          if (fallback.success) aiResp = { ...fallback, warning: 'سهمیه یا اتصال Gemini مشکل داشت؛ تولید به‌صورت خودکار به Groq منتقل شد.' };
-        }
-        if (!aiResp?.success && cloudflareApiToken && cloudflareAccountId) {
-          const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken: effectiveCloudflareToken, cloudflareAccountId: effectiveCloudflareAccount, cloudflareModel: effectiveCloudflareModel, systemPrompt, userMessage: attemptUserMsg });
-          if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq پاسخگو نبودند؛ تولید به‌صورت خودکار به Cloudflare منتقل شد.' };
-        }
+        if (fallback.success) aiResp = { ...fallback, warning: 'Groq پاسخگو نبود؛ تولید به Cloudflare منتقل شد.' };
       }
 
       if (aiResp && aiResp.success && aiResp.result) {
@@ -2513,28 +2493,12 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       });
     }
 
-    // 3. Studio Engine Fallback if AI provider could not complete
-    const crafted = craftSong({
-      prompt,
-      genre: musicGenre,
-      songType: songStructure,
-      tempoBpm,
-      vocalType,
-      mood,
-      language: activeLangs,
-      languages: activeLangs,
-      conversationHistory,
-    });
-    const studioAudit = analyzeSongQualityAudit(crafted.lyrics, musicGenre, prompt);
-    studioAudit.attemptsMade = 1;
-    crafted.qualityAudit = studioAudit;
-
-    return res.json({
-      result: crafted,
-      source: 'studio-engine',
-      warning: userApiKey || openrouterApiKey
-        ? 'کلید وارد شده با محدودیت مواجه شد؛ اثر با موتور هوشمند استودیو آفریده شد.'
-        : 'سرویس ابری با ترافیک بالا مواجه شد؛ اثر با موتور هوشمند استودیو آفریده شد.',
+    // Do not silently substitute canned/local lyrics when cloud providers fail.
+    return res.status(502).json({
+      error: 'اتصال به هوش مصنوعی برقرار نشد. کلید Groq یا Cloudflare و تنظیمات آن‌ها را بررسی کنید.',
+      provider: 'groq/cloudflare',
+      groqConfigured: Boolean(effectiveGroqKey),
+      cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
     });
   });
 
@@ -2593,10 +2557,7 @@ REQUIREMENTS:
     const userMessage = `Edit and refine this song based on: "${instruction}". Return the complete updated JSON.`;
 
     let aiResp = await callSelectedAIProvider({
-      provider: openrouterApiKey ? 'openrouter' : (provider || 'gemini'),
-      userApiKey,
-      openrouterApiKey,
-      openrouterModel,
+      provider: effectiveGroqKey ? 'groq' : 'cloudflare',
       groqApiKey: effectiveGroqKey,
       cloudflareApiToken: effectiveCloudflareToken,
       cloudflareAccountId: effectiveCloudflareAccount,
@@ -2604,12 +2565,12 @@ REQUIREMENTS:
       systemPrompt: editPrompt,
       userMessage,
     });
-    if (!aiResp?.success && (provider === 'gemini' || !openrouterApiKey)) {
-      if (groqApiKey) {
+    if (!aiResp?.success) {
+      if (effectiveGroqKey) {
         const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt: editPrompt, userMessage });
         if (fallback.success) aiResp = { ...fallback, warning: 'ویرایش Gemini ناموفق بود؛ ویرایش به‌صورت خودکار به Groq منتقل شد.' };
       }
-      if (!aiResp?.success && cloudflareApiToken && cloudflareAccountId) {
+      if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
         const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken: effectiveCloudflareToken, cloudflareAccountId: effectiveCloudflareAccount, cloudflareModel: effectiveCloudflareModel, systemPrompt: editPrompt, userMessage });
         if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq برای ویرایش پاسخگو نبودند؛ ویرایش به Cloudflare منتقل شد.' };
       }
