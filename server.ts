@@ -1522,18 +1522,15 @@ async function callSelectedAIProvider(params: {
     const model = (cloudflareModel || '@cf/meta/llama-3.1-8b-instruct').trim();
     if (!token || !account) return { success: false, error: 'برای Cloudflare باید Account ID و API Token وارد شوند.', source: 'cloudflare' };
     try {
-      const isWorkersAIModel = model.startsWith('@cf/');
-      const encodedModel = model.split('/').map(encodeURIComponent).join('/');
-      const endpoint = isWorkersAIModel
-        ? `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/run/${encodedModel}`
-        : `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/v1/chat/completions`;
+      const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/v1/chat/completions`;
       const messages = [
         { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
         { role: 'user', content: userMessage },
       ];
       const response = await fetch(endpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(isWorkersAIModel ? { messages, max_tokens: 8192 } : { model, messages, max_tokens: 8192, temperature: 0.65 }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ model, messages, max_tokens: 8192, temperature: 0.65 }),
         signal: AbortSignal.timeout(45000),
       });
       const json: any = await response.json().catch(() => ({}));
