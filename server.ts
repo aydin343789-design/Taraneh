@@ -2295,6 +2295,12 @@ async function startServer() {
       cloudflareModel = 'meta/muse-spark-open',
     } = req.body || {};
 
+    // Use optional server-side keys as a fallback when the browser did not send one.
+    const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
+    const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
+    const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || 'meta/muse-spark-open').trim();
+
     if (!prompt.trim()) {
       return res.status(400).json({ error: 'لطفاً پیام یا موضوع ترانه خود را بنویسید.' });
     }
@@ -2436,10 +2442,10 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           provider: 'openrouter',
           openrouterApiKey,
           openrouterModel,
-          groqApiKey,
-          cloudflareApiToken,
-          cloudflareAccountId,
-          cloudflareModel,
+          groqApiKey: effectiveGroqKey,
+          cloudflareApiToken: effectiveCloudflareToken,
+          cloudflareAccountId: effectiveCloudflareAccount,
+          cloudflareModel: effectiveCloudflareModel,
           userApiKey,
           systemPrompt,
           userMessage: attemptUserMsg,
@@ -2455,19 +2461,19 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         aiResp = await callSelectedAIProvider({
           provider: 'gemini',
           userApiKey,
-          groqApiKey,
-          cloudflareApiToken,
-          cloudflareAccountId,
-          cloudflareModel,
+          groqApiKey: effectiveGroqKey,
+          cloudflareApiToken: effectiveCloudflareToken,
+          cloudflareAccountId: effectiveCloudflareAccount,
+          cloudflareModel: effectiveCloudflareModel,
           systemPrompt,
           userMessage: attemptUserMsg,
         });
         if (!aiResp?.success && groqApiKey) {
-          const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt, userMessage: attemptUserMsg });
+          const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt, userMessage: attemptUserMsg });
           if (fallback.success) aiResp = { ...fallback, warning: 'سهمیه یا اتصال Gemini مشکل داشت؛ تولید به‌صورت خودکار به Groq منتقل شد.' };
         }
         if (!aiResp?.success && cloudflareApiToken && cloudflareAccountId) {
-          const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage: attemptUserMsg });
+          const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken: effectiveCloudflareToken, cloudflareAccountId: effectiveCloudflareAccount, cloudflareModel: effectiveCloudflareModel, systemPrompt, userMessage: attemptUserMsg });
           if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq پاسخگو نبودند؛ تولید به‌صورت خودکار به Cloudflare منتقل شد.' };
         }
       }
@@ -2487,13 +2493,15 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         }
         // If not passed and retries remain, loop continues to re-generate with feedback
       } else {
-        if ((provider === 'openrouter' && openrouterApiKey) || provider === 'claude' || provider === 'openai') {
-          return res.status(400).json({
-            error: aiResp?.error || `خطا در ارتباط با موتور ${provider}.`,
-            provider,
-          });
-        }
-        break; // If no openrouter key was provided and fallback was needed, fallback gracefully to studio engine
+        // Never stop at the primary provider error. All configured fallbacks have already been tried;
+        // continue to the local studio engine so the user still gets a result.
+        console.warn('[AI fallback exhausted]', {
+          provider,
+          primaryError: aiResp?.error || 'unknown provider error',
+          groqConfigured: Boolean(effectiveGroqKey),
+          cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
+        });
+        break;
       }
     }
 
