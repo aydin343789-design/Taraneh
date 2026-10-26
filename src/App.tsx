@@ -156,6 +156,10 @@ const STORAGE_KEY = 'chakameh_chatbot_sessions_v6';
 const SAVED_SONGS_KEY = 'chakameh_saved_library_songs_v1';
 const OPENROUTER_KEY_STORAGE = 'chakameh_openrouter_api_key_v1';
 const OPENROUTER_MODEL_STORAGE = 'chakameh_openrouter_model_v1';
+const GROQ_KEY_STORAGE = 'taraneh_groq_api_key_v1';
+const CLOUDFLARE_KEY_STORAGE = 'taraneh_cloudflare_api_token_v1';
+const CLOUDFLARE_ACCOUNT_STORAGE = 'taraneh_cloudflare_account_id_v1';
+const CLOUDFLARE_MODEL_STORAGE = 'taraneh_cloudflare_model_v1';
 
 // 1. DIVERSE GENRES & STYLES (شامل انواع سبک‌های رپ و موسیقی بدون تکرار)
 export const GENRE_OPTIONS = [
@@ -508,6 +512,11 @@ export default function App() {
     return localStorage.getItem(OPENROUTER_MODEL_STORAGE) || 'deepseek/deepseek-r1:free';
   });
 
+  const [groqApiKey, setGroqApiKey] = useState<string>(() => localStorage.getItem(GROQ_KEY_STORAGE) || '');
+  const [cloudflareApiToken, setCloudflareApiToken] = useState<string>(() => localStorage.getItem(CLOUDFLARE_KEY_STORAGE) || '');
+  const [cloudflareAccountId, setCloudflareAccountId] = useState<string>(() => localStorage.getItem(CLOUDFLARE_ACCOUNT_STORAGE) || '');
+  const [cloudflareModel, setCloudflareModel] = useState<string>(() => localStorage.getItem(CLOUDFLARE_MODEL_STORAGE) || '@cf/meta/llama-3.1-8b-instruct');
+
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
   const [testingOpenRouter, setTestingOpenRouter] = useState<boolean>(false);
   const [keyTestStatus, setKeyTestStatus] = useState<{ success: boolean; message: string } | null>(null);
@@ -601,6 +610,17 @@ export default function App() {
       // Ignore
     }
   }, [openrouterApiKey, openrouterModel]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GROQ_KEY_STORAGE, groqApiKey);
+      localStorage.setItem(CLOUDFLARE_KEY_STORAGE, cloudflareApiToken);
+      localStorage.setItem(CLOUDFLARE_ACCOUNT_STORAGE, cloudflareAccountId);
+      localStorage.setItem(CLOUDFLARE_MODEL_STORAGE, cloudflareModel);
+    } catch {
+      // Ignore storage errors; never log API credentials.
+    }
+  }, [groqApiKey, cloudflareApiToken, cloudflareAccountId, cloudflareModel]);
 
   const activeSession =
     sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -1004,6 +1024,10 @@ ${song.composerNote}
           provider: 'openrouter',
           openrouterApiKey: openrouterApiKey.trim(),
           openrouterModel: openrouterModel.trim() || 'deepseek/deepseek-r1:free',
+          groqApiKey: groqApiKey.trim(),
+          cloudflareApiToken: cloudflareApiToken.trim(),
+          cloudflareAccountId: cloudflareAccountId.trim(),
+          cloudflareModel: cloudflareModel.trim(),
         }),
       });
 
@@ -1120,6 +1144,10 @@ ${song.composerNote}
           provider: 'openrouter',
           openrouterApiKey: openrouterApiKey.trim(),
           openrouterModel: modelToUse,
+          groqApiKey: groqApiKey.trim(),
+          cloudflareApiToken: cloudflareApiToken.trim(),
+          cloudflareAccountId: cloudflareAccountId.trim(),
+          cloudflareModel: cloudflareModel.trim(),
           conversationHistory: activeSession.messages.slice(-6).map((m) => ({
             text: m.text || m.songResult?.title || '',
             role: m.sender === 'user' ? 'user' : 'model',
@@ -1635,6 +1663,16 @@ ${song.composerNote}
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Additional fallback providers: user-owned keys stay in this browser/device storage. */}
+            <div className="p-3.5 rounded-xl bg-[#141724] border border-emerald-500/20 space-y-3">
+              <div className="flex items-center justify-between gap-2"><div className="text-xs font-bold text-emerald-300">پشتیبان خودکار پس از خطای سرویس اصلی</div><span className="text-[10px] text-[#A69F91]">کلیدهای شخصی شما</span></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">کلید API سرویس Groq</label><input type="password" autoComplete="off" placeholder="gsk_..." value={groqApiKey} onChange={(e) => setGroqApiKey(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-emerald-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">محدودیت و سهمیه رایگان خود Groq همچنان برقرار است.</p></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare Account ID</label><input type="text" autoComplete="off" placeholder="شناسه حساب Cloudflare" value={cloudflareAccountId} onChange={(e) => setCloudflareAccountId(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare API Token</label><input type="password" autoComplete="off" placeholder="توکن محرمانه Cloudflare" value={cloudflareApiToken} onChange={(e) => setCloudflareApiToken(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">شناسه مدل Cloudflare</label><input type="text" autoComplete="off" placeholder="@cf/meta/llama-3.1-8b-instruct" value={cloudflareModel} onChange={(e) => setCloudflareModel(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">شناسه مدل را می‌توان تغییر داد؛ مدل‌های Workers AI معمولاً با @cf/ شروع می‌شوند.</p></div>
+              <p className="text-[10px] leading-relaxed text-amber-300/90">توکن را در GitHub یا چت منتشر نکن. در این نسخه، کلیدها در فضای ذخیره‌سازی مرورگر همین دستگاه ذخیره می‌شوند و رمزنگاری‌شده نیستند.</p>
             </div>
 
             {/* Field 2: AI Model Name Input (همان کادر اسم هوش مصنوعی درخواستی کاربر) */}
