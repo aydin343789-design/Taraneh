@@ -1522,13 +1522,19 @@ async function callSelectedAIProvider(params: {
     const model = (cloudflareModel || '@cf/meta/llama-3.1-8b-instruct').trim();
     if (!token || !account) return { success: false, error: 'برای Cloudflare باید Account ID و API Token وارد شوند.', source: 'cloudflare' };
     try {
+      const isWorkersAIModel = model.startsWith('@cf/');
       const encodedModel = model.split('/').map(encodeURIComponent).join('/');
-      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/run/${encodedModel}`, {
+      const endpoint = isWorkersAIModel
+        ? `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/run/${encodedModel}`
+        : `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/v1/chat/completions`;
+      const messages = [
+        { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
+        { role: 'user', content: userMessage },
+      ];
+      const response = await fetch(endpoint, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: [
-          { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
-          { role: 'user', content: userMessage },
-        ], max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
+        body: JSON.stringify(isWorkersAIModel ? { messages, max_tokens: 8192 } : { model, messages, max_tokens: 8192, temperature: 0.65 }),
+        signal: AbortSignal.timeout(45000),
       });
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok || json?.success === false) {
@@ -2280,7 +2286,7 @@ async function startServer() {
       groqApiKey = '',
       cloudflareApiToken = '',
       cloudflareAccountId = '',
-      cloudflareModel = '@cf/meta/llama-3.1-8b-instruct',
+      cloudflareModel = 'meta/muse-spark-open',
     } = req.body || {};
 
     if (!prompt.trim()) {
@@ -2519,7 +2525,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       groqApiKey = '',
       cloudflareApiToken = '',
       cloudflareAccountId = '',
-      cloudflareModel = '@cf/meta/llama-3.1-8b-instruct',
+      cloudflareModel = 'meta/muse-spark-open',
     } = req.body || {};
 
     if (!currentSong || !currentSong.lyrics) {
