@@ -1499,7 +1499,7 @@ async function callSelectedAIProvider(params: {
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [
+        body: JSON.stringify({ model: 'openai/gpt-oss-120b', messages: [
           { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
           { role: 'user', content: userMessage },
         ], temperature: 0.65, max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
@@ -2418,6 +2418,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
     let finalSource = '';
     let finalWarning: string | undefined = undefined;
     let previousAudit: SongQualityAudit | null = null;
+    const providerErrors: string[] = [];
 
     // Retry loop
     while (attemptsCount <= MAX_RETRIES) {
@@ -2445,6 +2446,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           systemPrompt,
           userMessage: attemptUserMsg,
         });
+        if (!aiResp?.success && aiResp?.error) providerErrors.push(aiResp.error);
       }
       if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
         const fallback = await callSelectedAIProvider({
@@ -2456,6 +2458,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           userMessage: attemptUserMsg,
         });
         if (fallback.success) aiResp = { ...fallback, warning: 'Groq پاسخگو نبود؛ تولید به Cloudflare منتقل شد.' };
+        else if (fallback.error) providerErrors.push(fallback.error);
       }
 
       if (aiResp && aiResp.success && aiResp.result) {
@@ -2495,7 +2498,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
 
     // Do not silently substitute canned/local lyrics when cloud providers fail.
     return res.status(502).json({
-      error: 'اتصال به هوش مصنوعی برقرار نشد. کلید Groq یا Cloudflare و تنظیمات آن‌ها را بررسی کنید.',
+      error: providerErrors.length ? providerErrors.join(' | ') : 'اتصال به هوش مصنوعی برقرار نشد. کلید Groq یا Cloudflare و تنظیمات آن‌ها را بررسی کنید.',
       provider: 'groq/cloudflare',
       groqConfigured: Boolean(effectiveGroqKey),
       cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
@@ -2587,22 +2590,11 @@ REQUIREMENTS:
       return res.json({ result: aiResp.result, source: aiResp.source });
     }
 
-    // If live AI call was unavailable, intelligently apply instruction to current song
-    const modifiedSong: SongGenerationResult = {
-      ...currentSong,
-      composerNote: `ویرایش دستی اعمال شد: ${instruction || 'بهینه‌سازی قافیه‌ها و ساختار'}.`,
-    };
-    const audit = analyzeSongQualityAudit(
-      modifiedSong.lyrics,
-      modifiedSong.genre || '',
-      instruction
-    );
-    modifiedSong.qualityAudit = audit;
-
-    return res.json({
-      result: modifiedSong,
-      source: 'studio-engine',
-      warning: 'ویرایش با موتور هوشمند استودیو ذخیره شد.',
+    return res.status(502).json({
+      error: aiResp?.error || 'اتصال به هوش مصنوعی برقرار نشد. کلید Groq یا Cloudflare را بررسی کنید.',
+      provider: 'groq/cloudflare',
+      groqConfigured: Boolean(effectiveGroqKey),
+      cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
     });
   });
 
