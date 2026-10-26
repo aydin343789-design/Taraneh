@@ -456,6 +456,13 @@ export const QUICK_PROMPTS = [
   },
 ];
 
+const API_BASE_STORAGE = 'taraneh_api_base_url';
+
+function apiUrl(path: string): string {
+  const base = (localStorage.getItem(API_BASE_STORAGE) || '').trim().replace(/\/$/, '');
+  return base ? base + path : path;
+}
+
 export default function App() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     try {
@@ -719,7 +726,7 @@ export default function App() {
     setKeyTestStatus(null);
 
     try {
-      const resp = await fetch('/api/test-key', {
+      const resp = await fetch(apiUrl('/api/test-key'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -883,7 +890,7 @@ ${song.composerNote}
     }));
 
     try {
-      const res = await fetch('/api/rhyme-assistant', {
+      const res = await fetch(apiUrl('/api/rhyme-assistant'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -943,7 +950,7 @@ ${song.composerNote}
     if (!manualEditState) return;
     setManualEditState((prev) => (prev ? { ...prev, isAuditing: true } : null));
     try {
-      const res = await fetch('/api/audit-song', {
+      const res = await fetch(apiUrl('/api/audit-song'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1015,7 +1022,7 @@ ${song.composerNote}
     );
 
     try {
-      const res = await fetch('/api/edit-song', {
+      const res = await fetch(apiUrl('/api/edit-song'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1129,7 +1136,7 @@ ${song.composerNote}
       : 'meta-llama/llama-3.3-70b-instruct:free';
 
     const sendChatRequest = async (modelToUse: string) => {
-      return await fetch('/api/chat', {
+      return await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1663,6 +1670,13 @@ ${song.composerNote}
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* API server URL is needed by the standalone Android app. */}
+            <div className="p-3.5 rounded-xl bg-[#141724] border border-cyan-500/20 space-y-2">
+              <label className="text-xs font-bold text-cyan-200">نشانی سرور برنامه (برای نسخه APK)</label>
+              <input type="url" autoComplete="url" placeholder="https://your-service.onrender.com" defaultValue={localStorage.getItem('taraneh_api_base_url') || ''} onChange={(e) => { const value = e.target.value.trim().replace(/\/$/, ''); if (value) localStorage.setItem('taraneh_api_base_url', value); else localStorage.removeItem('taraneh_api_base_url'); }} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-cyan-400 font-mono" dir="ltr" />
+              <p className="text-[10px] leading-relaxed text-[#A69F91]">بعد از انتشار سرور، نشانی HTTPS آن را اینجا وارد کن. اگر این کادر خالی باشد، برنامه فقط روی وبِ هم‌مبدأ کار می‌کند؛ در APK درخواست‌های هوش مصنوعی وصل نمی‌شوند.</p>
             </div>
 
             {/* Additional fallback providers: user-owned keys stay in this browser/device storage. */}
