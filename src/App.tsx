@@ -1132,10 +1132,8 @@ ${song.composerNote}
     }
     setIsLoading(true);
 
-    const primaryModel = openrouterModel.trim() || 'meta-llama/llama-3.3-70b-instruct:free';
-    const fallbackModel = primaryModel === 'meta-llama/llama-3.3-70b-instruct:free'
-      ? 'google/gemma-2-9b-it:free'
-      : 'meta-llama/llama-3.3-70b-instruct:free';
+    const primaryModel = 'Groq → Cloudflare';
+    const fallbackModel = primaryModel;
 
     const sendChatRequest = async (modelToUse: string) => {
       return await fetch(apiUrl('/api/chat'), {
@@ -1150,9 +1148,7 @@ ${song.composerNote}
           mood: selectedMood,
           languages: langsToSend,
           language: langsToSend.join(' + '),
-          provider: 'openrouter',
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: modelToUse,
+          provider: 'groq',
           groqApiKey: groqApiKey.trim(),
           cloudflareApiToken: cloudflareApiToken.trim(),
           cloudflareAccountId: cloudflareAccountId.trim(),
@@ -1175,7 +1171,7 @@ ${song.composerNote}
       data = await response.json().catch(() => ({}));
 
       // Check if primary call failed and automatic retry should trigger
-      if (!response.ok || data.error) {
+      if (false && (!response.ok || data.error)) {
         console.warn(`[Auto-Retry] Primary model ${primaryModel} failed. Automatically retrying once with stable fallback model ${fallbackModel}...`);
         setRetryNotification(`اتصال با مدل اولیه (${primaryModel.split('/').pop()}) ناموفق بود؛ در حال تلاش مجدد خودکار با مدل پایدار جایگزین (${fallbackModel.split('/').pop()})...`);
         isRetried = true;
@@ -1203,7 +1199,7 @@ ${song.composerNote}
           sender: 'bot',
           timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
           error: `خطای شبکه در ارتباط با سرور: ${err2?.message || 'مشکل اتصال اینترنت'}`,
-          failedProvider: 'openrouter',
+          failedProvider: 'Groq / Cloudflare',
         };
 
         setSessions((prev) =>
@@ -1225,8 +1221,8 @@ ${song.composerNote}
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-        error: data?.error || 'خطا در ارتباط با سرویس هوش مصنوعی (حتی پس از تلاش مجدد با مدل پایدار جایگزین).',
-        failedProvider: data?.provider || 'openrouter',
+        error: data?.error || 'خطا در ارتباط با سرویس هوش مصنوعی Groq و Cloudflare.',
+        failedProvider: data?.provider || 'Groq / Cloudflare',
       };
 
       setSessions((prev) =>
@@ -1252,7 +1248,7 @@ ${song.composerNote}
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
         songResult: data.result,
-        source: data.source || `openrouter (${usedModel})`,
+        source: data.source || 'Groq / Cloudflare',
         warning: warningNote,
       };
 
