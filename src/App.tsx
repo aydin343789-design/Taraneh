@@ -1276,32 +1276,11 @@ ${song.composerNote}
     handleSendMessage(qp.prompt, qp.languages);
   };
 
-  const getProviderBadge = (providerName: string) => {
-    if (providerName.includes('openrouter')) {
-      const modelPart = providerName.replace('openrouter', '').replace(/[()]/g, '').trim() || openrouterModel;
-      const shortName = modelPart.split('/').pop() || modelPart;
-      const isFree = modelPart.includes(':free');
-      return {
-        label: `OpenRouter (${shortName}${isFree ? ' · رایگان' : ''})`,
-        short: isFree ? `🌐 ${shortName} (رایگان)` : `🌐 ${shortName}`,
-        bg: isFree
-          ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
-          : 'bg-purple-500/15 text-purple-300 border-purple-500/40',
-      };
-    }
-    if (providerName.includes('gemini')) {
-      return {
-        label: 'Google Gemini (پشتیبان ابری)',
-        short: 'جِمِنای',
-        bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-      };
-    }
-    return {
-      label: 'ترانه سرای فرخزاد (موتور اختصاصی)',
-      short: 'استودیو فرخزاد',
-      bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    };
-  };
+  const getProviderBadge = (_providerName: string) => ({
+    label: 'هوش مصنوعی ابری (Groq → Cloudflare)',
+    short: 'Groq / Cloudflare',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+  });
 
   const activeGenreObj = GENRE_OPTIONS.find((g) => g.label === selectedGenre) || GENRE_OPTIONS[0];
 
