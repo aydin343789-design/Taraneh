@@ -2449,9 +2449,21 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         aiResp = await callSelectedAIProvider({
           provider: 'gemini',
           userApiKey,
+          groqApiKey,
+          cloudflareApiToken,
+          cloudflareAccountId,
+          cloudflareModel,
           systemPrompt,
           userMessage: attemptUserMsg,
         });
+        if (!aiResp?.success && groqApiKey) {
+          const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt, userMessage: attemptUserMsg });
+          if (fallback.success) aiResp = { ...fallback, warning: 'سهمیه یا اتصال Gemini مشکل داشت؛ تولید به‌صورت خودکار به Groq منتقل شد.' };
+        }
+        if (!aiResp?.success && cloudflareApiToken && cloudflareAccountId) {
+          const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage: attemptUserMsg });
+          if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq پاسخگو نبودند؛ تولید به‌صورت خودکار به Cloudflare منتقل شد.' };
+        }
       }
 
       if (aiResp && aiResp.success && aiResp.result) {
