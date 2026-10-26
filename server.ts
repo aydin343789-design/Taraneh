@@ -2120,6 +2120,34 @@ async function startServer() {
   app.use(express.json({ limit: '2mb' }));
   app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'taraneh-api' }));
 
+  app.post('/api/test-providers', async (req, res) => {
+    const { groqApiKey = '', cloudflareApiToken = '', cloudflareAccountId = '', cloudflareModel = 'meta/muse-spark-open' } = req.body || {};
+    const results: Record<string, { success: boolean; message: string }> = {};
+    const testSystem = 'Return only a JSON object with exactly two string fields: title and lyrics. Use title "Connection test" and lyrics "Connection successful".';
+    const testMessage = 'Connection test. Return the required JSON now.';
+    if (String(groqApiKey).trim()) {
+      const result = await callSelectedAIProvider({ provider: 'groq', groqApiKey: String(groqApiKey).trim(), systemPrompt: testSystem, userMessage: testMessage });
+      results.groq = { success: !!result.success, message: result.success ? 'Groq connected successfully.' : (result.error || 'Groq request failed.') };
+    } else {
+      results.groq = { success: false, message: 'Groq API key is empty.' };
+    }
+    if (String(cloudflareApiToken).trim() && String(cloudflareAccountId).trim()) {
+      const result = await callSelectedAIProvider({
+        provider: 'cloudflare',
+        cloudflareApiToken: String(cloudflareApiToken).trim(),
+        cloudflareAccountId: String(cloudflareAccountId).trim(),
+        cloudflareModel: String(cloudflareModel || 'meta/muse-spark-open').trim(),
+        systemPrompt: testSystem,
+        userMessage: testMessage,
+      });
+      results.cloudflare = { success: !!result.success, message: result.success ? 'Cloudflare connected successfully.' : (result.error || 'Cloudflare request failed.') };
+    } else {
+      results.cloudflare = { success: false, message: 'Cloudflare API token or Account ID is empty.' };
+    }
+    return res.json({ ok: Object.values(results).some((x) => x.success), results });
+  });
+
+
   // Key validation endpoint for testing keys in the UI
   app.post('/api/test-key', async (req, res) => {
     const { provider, apiKey } = req.body || {};
