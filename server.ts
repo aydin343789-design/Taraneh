@@ -1500,16 +1500,16 @@ async function callSelectedAIProvider(params: {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [
-          { role: 'system', content: `${systemPrompt}\\n\\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
+          { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
           { role: 'user', content: userMessage },
         ], temperature: 0.65, max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
       });
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok) return { success: false, error: `خطای Groq (${response.status}): ${json?.error?.message || response.statusText}`, source: 'groq' };
-      const content = String(json?.choices?.[0]?.message?.content || '').replace(/<think>[\\s\\S]*?<\\/think>/gi, '').trim();
-      const cleaned = content.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();
+      const content = String(json?.choices?.[0]?.message?.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+      const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       let parsed: any;
-      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\\{[\\s\\S]*\\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
+      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\{[\s\S]*\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
       if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: 'groq (llama-3.3-70b-versatile)' };
       return { success: false, error: 'Groq پاسخ داد، اما خروجی ترانه JSON معتبر نبود.', source: 'groq' };
     } catch (e: any) { return { success: false, error: `اتصال به Groq ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'groq' }; }
@@ -1526,7 +1526,7 @@ async function callSelectedAIProvider(params: {
       const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/run/${encodedModel}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: [
-          { role: 'system', content: `${systemPrompt}\\n\\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
+          { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
           { role: 'user', content: userMessage },
         ], max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
       });
@@ -1536,9 +1536,9 @@ async function callSelectedAIProvider(params: {
         return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}`, source: 'cloudflare' };
       }
       const content = String(json?.result?.response || json?.result?.choices?.[0]?.message?.content || json?.choices?.[0]?.message?.content || '').trim();
-      const cleaned = content.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();
+      const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       let parsed: any;
-      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\\{[\\s\\S]*\\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
+      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\{[\s\S]*\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
       if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: `cloudflare (${model})` };
       return { success: false, error: 'Cloudflare پاسخ داد، اما خروجی ترانه JSON معتبر نبود؛ ممکن است مدل انتخابی قالب پیام را پشتیبانی نکند.', source: 'cloudflare' };
     } catch (e: any) { return { success: false, error: `اتصال به Cloudflare ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'cloudflare' }; }
