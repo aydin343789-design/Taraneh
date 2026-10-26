@@ -515,7 +515,7 @@ export default function App() {
   const [groqApiKey, setGroqApiKey] = useState<string>(() => localStorage.getItem(GROQ_KEY_STORAGE) || '');
   const [cloudflareApiToken, setCloudflareApiToken] = useState<string>(() => localStorage.getItem(CLOUDFLARE_KEY_STORAGE) || '');
   const [cloudflareAccountId, setCloudflareAccountId] = useState<string>(() => localStorage.getItem(CLOUDFLARE_ACCOUNT_STORAGE) || '');
-  const [cloudflareModel, setCloudflareModel] = useState<string>(() => localStorage.getItem(CLOUDFLARE_MODEL_STORAGE) || '@cf/meta/llama-3.1-8b-instruct');
+  const [cloudflareModel, setCloudflareModel] = useState<string>(() => localStorage.getItem(CLOUDFLARE_MODEL_STORAGE) || 'meta/muse-spark-open');
 
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
   const [testingOpenRouter, setTestingOpenRouter] = useState<boolean>(false);
