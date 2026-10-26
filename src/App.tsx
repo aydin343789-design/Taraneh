@@ -458,9 +458,11 @@ export const QUICK_PROMPTS = [
 
 const API_BASE_STORAGE = 'taraneh_api_base_url';
 
+const DEFAULT_API_BASE = 'https://taraneh-api.onrender.com';
+
 function apiUrl(path: string): string {
-  const base = (localStorage.getItem(API_BASE_STORAGE) || '').trim().replace(/\/$/, '');
-  return base ? base + path : path;
+  const base = (localStorage.getItem(API_BASE_STORAGE) || DEFAULT_API_BASE).trim().replace(/\/$/, '');
+  return base + path;
 }
 
 export default function App() {
@@ -1675,7 +1677,7 @@ ${song.composerNote}
             {/* API server URL is needed by the standalone Android app. */}
             <div className="p-3.5 rounded-xl bg-[#141724] border border-cyan-500/20 space-y-2">
               <label className="text-xs font-bold text-cyan-200">نشانی سرور برنامه (برای نسخه APK)</label>
-              <input type="url" autoComplete="url" placeholder="https://your-service.onrender.com" defaultValue={localStorage.getItem('taraneh_api_base_url') || ''} onChange={(e) => { const value = e.target.value.trim().replace(/\/$/, ''); if (value) localStorage.setItem('taraneh_api_base_url', value); else localStorage.removeItem('taraneh_api_base_url'); }} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-cyan-400 font-mono" dir="ltr" />
+              <input type="url" autoComplete="url" placeholder="https://your-service.onrender.com" defaultValue={localStorage.getItem('taraneh_api_base_url') || 'https://taraneh-api.onrender.com'} onChange={(e) => { const value = e.target.value.trim().replace(/\/$/, ''); if (value) localStorage.setItem('taraneh_api_base_url', value); else localStorage.removeItem('taraneh_api_base_url'); }} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-cyan-400 font-mono" dir="ltr" />
               <p className="text-[10px] leading-relaxed text-[#A69F91]">بعد از انتشار سرور، نشانی HTTPS آن را اینجا وارد کن. اگر این کادر خالی باشد، برنامه فقط روی وبِ هم‌مبدأ کار می‌کند؛ در APK درخواست‌های هوش مصنوعی وصل نمی‌شوند.</p>
             </div>
 
