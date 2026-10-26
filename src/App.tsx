@@ -712,41 +712,27 @@ export default function App() {
     setTimeout(() => setKeySaveMessage(''), 3500);
   };
 
-  const handleTestOpenRouterKey = async (overrideKey?: string, overrideModel?: string) => {
-    const k = (overrideKey !== undefined ? overrideKey : openrouterApiKey).trim();
-    const m = (overrideModel !== undefined ? overrideModel : openrouterModel).trim() || 'deepseek/deepseek-r1:free';
-
-    if (!k) {
-      setKeyTestStatus({
-        success: false,
-        message: 'لطفاً ابتدا کلید API اوپن‌روتر خود را در کادر وارد نمایید.',
-      });
-      return;
-    }
-
+  const handleTestProviders = async () => {
     setTestingOpenRouter(true);
     setKeyTestStatus(null);
-
     try {
-      const resp = await fetch(apiUrl('/api/test-key'), {
+      const resp = await fetch(apiUrl('/api/test-providers'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'openrouter',
-          apiKey: k,
-          model: m,
+          groqApiKey: groqApiKey.trim(),
+          cloudflareApiToken: cloudflareApiToken.trim(),
+          cloudflareAccountId: cloudflareAccountId.trim(),
+          cloudflareModel: cloudflareModel.trim(),
         }),
       });
-      const data = await resp.json();
-      setKeyTestStatus({
-        success: !!data.valid,
-        message: data.message || (data.valid ? 'کلید با موفقیت متصل شد.' : 'خطا در اعتبارسنجی کلید.'),
-      });
+      const data = await resp.json().catch(() => ({}));
+      const groq = data?.results?.groq;
+      const cloudflare = data?.results?.cloudflare;
+      const message = `Groq: ${groq?.message || 'بدون پاسخ'} | Cloudflare: ${cloudflare?.message || 'بدون پاسخ'}`;
+      setKeyTestStatus({ success: !!data?.ok, message });
     } catch (e: any) {
-      setKeyTestStatus({
-        success: false,
-        message: `خطای اتصال به سرور: ${e?.message || 'خطای شبکه'}`,
-      });
+      setKeyTestStatus({ success: false, message: `خطای اتصال به سرور: ${e?.message || 'خطای شبکه'}` });
     } finally {
       setTestingOpenRouter(false);
     }
@@ -1559,13 +1545,13 @@ ${song.composerNote}
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[#F4EFE6] flex items-center gap-2">
-                    <span>تنظیم سرویس‌های هوش مصنوعی</span>
+                    <span>تنظیم اتصال هوش مصنوعی</span>
                     <span className="text-[10px] bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded font-mono">
                       Universal API
                     </span>
                   </h3>
                   <p className="text-xs text-[#A69F91] mt-0.5">
-                    اتصال به صدها مدل هوش مصنوعی قدرتمند جهان با یک کلید واحد و مدل‌های با توکن رایگان
+                    آزمایش مستقیم اتصال Groq و Cloudflare؛ نتیجهٔ واقعی هر سرویس در همین پنجره نمایش داده می‌شود.
                   </p>
                 </div>
               </div>
@@ -1595,18 +1581,28 @@ ${song.composerNote}
               <p className="text-[10px] leading-relaxed text-amber-300/90">توکن را در GitHub یا چت منتشر نکن. در این نسخه، کلیدها در فضای ذخیره‌سازی مرورگر همین دستگاه ذخیره می‌شوند و رمزنگاری‌شده نیستند.</p>
             </div>
 
+            {keyTestStatus && (
+              <div className={`rounded-lg border p-3 text-xs leading-6 whitespace-pre-wrap ${keyTestStatus.success ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : 'border-red-500/40 bg-red-500/10 text-red-200'}`}>
+                {keyTestStatus.message}
+              </div>
+            )}
             {/* Modal Footer */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-3 flex-wrap">
               <span className="text-[11px] text-[#8E8779]">
-                کلیدها فقط برای اتصال مستقیم به سرویس‌های Groq و Cloudflare استفاده می‌شوند.
+                کلیدها فقط برای اتصال مستقیم به Groq و Cloudflare استفاده می‌شوند.
               </span>
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(false)}
-                className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs cursor-pointer shadow-md transition-colors"
-              >
-                تأیید و بازگشت به استودیو
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" disabled={testingOpenRouter} onClick={handleTestProviders} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs">
+                  {testingOpenRouter ? 'در حال آزمایش...' : 'آزمایش اتصال کلیدها'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowKeyModal(false)}
+                  className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs cursor-pointer shadow-md transition-colors"
+                >
+                  تأیید و بازگشت
+                </button>
+              </div>
             </div>
           </div>
         </div>
