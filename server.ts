@@ -1475,17 +1475,73 @@ interface AIProviderResponse {
 
 // Multi-provider caller supporting OpenRouter (unified API for hundreds of AI models & free tokens), Gemini, OpenAI, Claude, and Studio Engine
 async function callSelectedAIProvider(params: {
-  provider: 'openrouter' | 'gemini' | 'openai' | 'claude' | 'studio';
+  provider: 'openrouter' | 'gemini' | 'openai' | 'claude' | 'studio' | 'groq' | 'cloudflare';
   userApiKey?: string;
   openrouterApiKey?: string;
   openrouterModel?: string;
+  groqApiKey?: string;
+  cloudflareApiToken?: string;
+  cloudflareAccountId?: string;
+  cloudflareModel?: string;
   systemPrompt: string;
   userMessage: string;
 }): Promise<AIProviderResponse> {
-  const { provider, userApiKey, openrouterApiKey, openrouterModel, systemPrompt, userMessage } = params;
+  const { provider, userApiKey, openrouterApiKey, openrouterModel, groqApiKey, cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage } = params;
 
   if (provider === 'studio') {
     return { success: false, source: 'studio' };
+  }
+
+  // Groq fallback: OpenAI-compatible chat completions API.
+  if (provider === 'groq') {
+    const key = (groqApiKey || '').trim();
+    if (!key) return { success: false, error: 'کلید Groq وارد نشده است.', source: 'groq' };
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [
+          { role: 'system', content: `${systemPrompt}\\n\\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
+          { role: 'user', content: userMessage },
+        ], temperature: 0.65, max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
+      });
+      const json: any = await response.json().catch(() => ({}));
+      if (!response.ok) return { success: false, error: `خطای Groq (${response.status}): ${json?.error?.message || response.statusText}`, source: 'groq' };
+      const content = String(json?.choices?.[0]?.message?.content || '').replace(/<think>[\\s\\S]*?<\\/think>/gi, '').trim();
+      const cleaned = content.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();
+      let parsed: any;
+      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\\{[\\s\\S]*\\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
+      if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: 'groq (llama-3.3-70b-versatile)' };
+      return { success: false, error: 'Groq پاسخ داد، اما خروجی ترانه JSON معتبر نبود.', source: 'groq' };
+    } catch (e: any) { return { success: false, error: `اتصال به Groq ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'groq' }; }
+  }
+
+  // Cloudflare Workers AI fallback. Account ID and token come from the user.
+  if (provider === 'cloudflare') {
+    const token = (cloudflareApiToken || '').trim();
+    const account = (cloudflareAccountId || '').trim();
+    const model = (cloudflareModel || '@cf/meta/llama-3.1-8b-instruct').trim();
+    if (!token || !account) return { success: false, error: 'برای Cloudflare باید Account ID و API Token وارد شوند.', source: 'cloudflare' };
+    try {
+      const encodedModel = model.split('/').map(encodeURIComponent).join('/');
+      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/run/${encodedModel}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ messages: [
+          { role: 'system', content: `${systemPrompt}\\n\\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
+          { role: 'user', content: userMessage },
+        ], max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
+      });
+      const json: any = await response.json().catch(() => ({}));
+      if (!response.ok || json?.success === false) {
+        const detail = json?.errors?.map((x: any) => x.message).filter(Boolean).join('; ') || json?.error?.message || response.statusText;
+        return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}`, source: 'cloudflare' };
+      }
+      const content = String(json?.result?.response || json?.result?.choices?.[0]?.message?.content || json?.choices?.[0]?.message?.content || '').trim();
+      const cleaned = content.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();
+      let parsed: any;
+      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\\{[\\s\\S]*\\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
+      if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: `cloudflare (${model})` };
+      return { success: false, error: 'Cloudflare پاسخ داد، اما خروجی ترانه JSON معتبر نبود؛ ممکن است مدل انتخابی قالب پیام را پشتیبانی نکند.', source: 'cloudflare' };
+    } catch (e: any) { return { success: false, error: `اتصال به Cloudflare ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'cloudflare' }; }
   }
 
   // 1. OpenRouter (Universal AI Gateway supporting all models & free tier tokens)
@@ -1505,6 +1561,14 @@ async function callSelectedAIProvider(params: {
             warning: 'کلید اوپن‌روتر هنوز وارد نشده است؛ سرایش با کلید ابری پشتیبان انجام شد. برای استفاده از مدل‌های اختصاصی اوپن‌روتر، کلید خود را در منوی تنظیمات ذخیره نمایید.',
           };
         }
+      }
+      if (groqApiKey) {
+        const groqFallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt, userMessage });
+        if (groqFallback.success) return { ...groqFallback, warning: 'سرویس اصلی در دسترس نبود؛ سرایش به‌صورت خودکار به Groq منتقل شد.' };
+      }
+      if (cloudflareApiToken && cloudflareAccountId) {
+        const cloudFallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage });
+        if (cloudFallback.success) return { ...cloudFallback, warning: 'سرویس اصلی و Groq در دسترس نبودند؛ سرایش به‌صورت خودکار به Cloudflare منتقل شد.' };
       }
       return {
         success: false,
@@ -1612,6 +1676,15 @@ async function callSelectedAIProvider(params: {
           warning: `مدل‌های اوپن‌روتر موقتاً با ترافیک بالا مواجه شدند (${lastOpenRouterError})؛ ترانه با هوش مصنوعی پشتیبان جِمِنای خلق شد.`,
         };
       }
+    }
+
+    if (groqApiKey) {
+      const groqFallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt, userMessage });
+      if (groqFallback.success) return { ...groqFallback, warning: 'OpenRouter و Gemini پاسخگو نبودند؛ سرایش به‌صورت خودکار به Groq منتقل شد.' };
+    }
+    if (cloudflareApiToken && cloudflareAccountId) {
+      const cloudFallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage });
+      if (cloudFallback.success) return { ...cloudFallback, warning: 'OpenRouter، Gemini و Groq پاسخگو نبودند؛ سرایش به‌صورت خودکار به Cloudflare منتقل شد.' };
     }
 
     return {
@@ -2204,6 +2277,10 @@ async function startServer() {
       userApiKey = '',
       openrouterApiKey = '',
       openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+      groqApiKey = '',
+      cloudflareApiToken = '',
+      cloudflareAccountId = '',
+      cloudflareModel = '@cf/meta/llama-3.1-8b-instruct',
     } = req.body || {};
 
     if (!prompt.trim()) {
@@ -2347,6 +2424,10 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           provider: 'openrouter',
           openrouterApiKey,
           openrouterModel,
+          groqApiKey,
+          cloudflareApiToken,
+          cloudflareAccountId,
+          cloudflareModel,
           userApiKey,
           systemPrompt,
           userMessage: attemptUserMsg,
@@ -2435,6 +2516,10 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       userApiKey = '',
       openrouterApiKey = '',
       openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+      groqApiKey = '',
+      cloudflareApiToken = '',
+      cloudflareAccountId = '',
+      cloudflareModel = '@cf/meta/llama-3.1-8b-instruct',
     } = req.body || {};
 
     if (!currentSong || !currentSong.lyrics) {
@@ -2475,6 +2560,10 @@ REQUIREMENTS:
       userApiKey,
       openrouterApiKey,
       openrouterModel,
+      groqApiKey,
+      cloudflareApiToken,
+      cloudflareAccountId,
+      cloudflareModel,
       systemPrompt: editPrompt,
       userMessage,
     });
