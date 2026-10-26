@@ -2585,6 +2585,16 @@ REQUIREMENTS:
       systemPrompt: editPrompt,
       userMessage,
     });
+    if (!aiResp?.success && (provider === 'gemini' || !openrouterApiKey)) {
+      if (groqApiKey) {
+        const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt: editPrompt, userMessage });
+        if (fallback.success) aiResp = { ...fallback, warning: 'ویرایش Gemini ناموفق بود؛ ویرایش به‌صورت خودکار به Groq منتقل شد.' };
+      }
+      if (!aiResp?.success && cloudflareApiToken && cloudflareAccountId) {
+        const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt: editPrompt, userMessage });
+        if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq برای ویرایش پاسخگو نبودند؛ ویرایش به Cloudflare منتقل شد.' };
+      }
+    }
 
     if (aiResp && aiResp.success && aiResp.result) {
       const audit = analyzeSongQualityAudit(
