@@ -1465,6 +1465,22 @@ A timeless hymn of liberty beneath the starry skies!`);
   };
 }
 
+function extractModelText(value: any): string {
+  if (typeof value === 'string') return value.trim();
+  if (Array.isArray(value)) return value.map((part: any) => typeof part === 'string' ? part : (typeof part?.text === 'string' ? part.text : '')).filter(Boolean).join('\n').trim();
+  if (value && typeof value === 'object') { if (typeof value.text === 'string') return value.text.trim(); if (typeof value.content === 'string') return value.content.trim(); }
+  return '';
+}
+
+function parseModelJson(raw: string): any {
+  const cleaned = String(raw || '').replace(/<think>[\\s\\S]*?<\\/think>/gi, '').replace(/^\\s*\\x60\\x60\\x60(?:json)?\\s*/i, '').replace(/\\s*\\x60\\x60\\x60\\s*$/i, '').trim();
+  try { return JSON.parse(cleaned); } catch {}
+  const start = cleaned.indexOf('{'); if (start < 0) return null;
+  let depth = 0, inString = false, escaped = false;
+  for (let i = start; i < cleaned.length; i++) { const ch = cleaned[i]; if (inString) { if (escaped) escaped = false; else if (ch === '\\\\') escaped = true; else if (ch === '"') inString = false; continue; } if (ch === '"') inString = true; else if (ch === '{') depth++; else if (ch === '}' && --depth === 0) { try { return JSON.parse(cleaned.slice(start, i + 1)); } catch { return null; } } }
+  return null;
+}
+
 interface AIProviderResponse {
   success: boolean;
   result?: SongGenerationResult;
@@ -1514,10 +1530,8 @@ Write original, meaningful lyrics with a coherent story, natural rhymes (never f
       });
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok) return { success: false, error: `خطای Groq (${response.status}): ${json?.error?.message || response.statusText}`, source: 'groq' };
-      const content = String(json?.choices?.[0]?.message?.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-      const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-      let parsed: any;
-      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\{[\s\S]*\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
+      const content = extractModelText(json?.choices?.[0]?.message?.content ?? json?.choices?.[0]?.message?.output_text);
+      const parsed = parseModelJson(content);
       if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: 'groq (openai/gpt-oss-120b)' };
       return { success: false, error: 'Groq پاسخ داد، اما خروجی ترانه JSON معتبر نبود.', source: 'groq' };
     } catch (e: any) { return { success: false, error: `اتصال به Groq ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'groq' }; }
@@ -1549,13 +1563,13 @@ Write original, meaningful lyrics with a coherent story, natural rhymes (never f
           : '';
         return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}.${authHint}`, source: 'cloudflare' };
       }
-      const content = String(json?.result?.choices?.[0]?.message?.content || json?.choices?.[0]?.message?.content || json?.result?.response || '').trim();
-      const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-      let parsed: any;
-      try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\{[\s\S]*\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
+      const content = extractModelText(json?.result?.choices?.[0]?.message?.content ?? json?.choices?.[0]?.message?.content ?? json?.result?.response ?? json?.response);
+      const parsed = parseModelJson(content);
       if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: `cloudflare (${model})` };
-      console.warn('[Cloudflare generation unusable]', { model, hasContent: Boolean(content), finishReason: json?.result?.choices?.[0]?.finish_reason || json?.choices?.[0]?.finish_reason || null });
-      return { success: false, error: `Cloudflare پاسخ داد، اما خروجی ترانه JSON معتبر نبود یا متن خالی بود (مدل: ${model}).`, source: 'cloudflare' };
+      const finishReason = json?.result?.choices?.[0]?.finish_reason || json?.choices?.[0]?.finish_reason || null;
+      console.warn('[Cloudflare generation unusable]', { model, hasContent: Boolean(content), finishReason, responseKeys: Object.keys(json || {}) });
+      const detail = !content ? (finishReason === 'length' ? 'پاسخ پیش از تولید متن نهایی قطع شد (محدودیت طول خروجی).' : 'مدل متن نهایی برنگرداند.') : 'متن برگشت، اما JSON ترانه قابل‌خواندن نبود.';
+      return { success: false, error: `Cloudflare: ${detail} (مدل: ${model}${finishReason ? `, پایان: ${finishReason}` : ''}).`, source: 'cloudflare' };
     } catch (e: any) { return { success: false, error: `اتصال به Cloudflare ناموفق بود: ${e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'پاسخ مدل در ۲۸ ثانیه آماده نشد؛ تلاش با مدل جایگزین ادامه می‌یابد.' : (e?.message || 'خطای شبکه')}`, source: 'cloudflare' }; }
   }
 
