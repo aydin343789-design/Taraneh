@@ -2700,6 +2700,12 @@ REQUIREMENTS:
       );
       audit.attemptsMade = 1;
       aiResp.result.qualityAudit = audit;
+      if (!audit.passed) {
+        return res.status(422).json({
+          error: 'نسخهٔ ویرایش‌شده از کنترل کیفیت عبور نکرد؛ برای جلوگیری از تحویل متن ضعیف، آن را تأیید نکردم. دستور ویرایش را دقیق‌تر کن یا دوباره تلاش کن.',
+          qualityAudit: audit,
+        });
+      }
       return res.json({ result: aiResp.result, source: aiResp.source });
     }
 
