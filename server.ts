@@ -1473,11 +1473,11 @@ function extractModelText(value: any): string {
 }
 
 function parseModelJson(raw: string): any {
-  const cleaned = String(raw || '').replace(/<think>[\\s\\S]*?<\\/think>/gi, '').replace(/^\\s*\\x60\\x60\\x60(?:json)?\\s*/i, '').replace(/\\s*\\x60\\x60\\x60\\s*$/i, '').trim();
+  const cleaned = String(raw || '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^\s*\x60\x60\x60(?:json)?\s*/i, '').replace(/\s*\x60\x60\x60\s*$/i, '').trim();
   try { return JSON.parse(cleaned); } catch {}
   const start = cleaned.indexOf('{'); if (start < 0) return null;
   let depth = 0, inString = false, escaped = false;
-  for (let i = start; i < cleaned.length; i++) { const ch = cleaned[i]; if (inString) { if (escaped) escaped = false; else if (ch === '\\\\') escaped = true; else if (ch === '"') inString = false; continue; } if (ch === '"') inString = true; else if (ch === '{') depth++; else if (ch === '}' && --depth === 0) { try { return JSON.parse(cleaned.slice(start, i + 1)); } catch { return null; } } }
+  for (let i = start; i < cleaned.length; i++) { const ch = cleaned[i]; if (inString) { if (escaped) escaped = false; else if (ch === '\\') escaped = true; else if (ch === '"') inString = false; continue; } if (ch === '"') inString = true; else if (ch === '{') depth++; else if (ch === '}' && --depth === 0) { try { return JSON.parse(cleaned.slice(start, i + 1)); } catch { return null; } } }
   return null;
 }
 
