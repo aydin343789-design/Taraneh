@@ -1519,7 +1519,7 @@ async function callSelectedAIProvider(params: {
   if (provider === 'cloudflare') {
     const token = (cloudflareApiToken || '').trim();
     const account = (cloudflareAccountId || '').trim();
-    const model = (cloudflareModel || '@cf/meta/llama-3.1-8b-instruct').trim();
+    const model = (cloudflareModel || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
     if (!token || !account) return { success: false, error: 'برای Cloudflare باید Account ID و API Token وارد شوند.', source: 'cloudflare' };
     try {
       const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/v1/chat/completions`;
@@ -1531,7 +1531,7 @@ async function callSelectedAIProvider(params: {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ model, messages, max_tokens: 8192, temperature: 0.65 }),
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(28000),
       });
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok || json?.success === false) {
@@ -1541,13 +1541,14 @@ async function callSelectedAIProvider(params: {
           : '';
         return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}.${authHint}`, source: 'cloudflare' };
       }
-      const content = String(json?.result?.response || json?.result?.choices?.[0]?.message?.content || json?.choices?.[0]?.message?.content || '').trim();
+      const content = String(json?.result?.choices?.[0]?.message?.content || json?.choices?.[0]?.message?.content || json?.result?.response || '').trim();
       const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       let parsed: any;
       try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\{[\s\S]*\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
       if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: `cloudflare (${model})` };
-      return { success: false, error: 'Cloudflare پاسخ داد، اما خروجی ترانه JSON معتبر نبود؛ ممکن است مدل انتخابی قالب پیام را پشتیبانی نکند.', source: 'cloudflare' };
-    } catch (e: any) { return { success: false, error: `اتصال به Cloudflare ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'cloudflare' }; }
+      console.warn('[Cloudflare generation unusable]', { model, hasContent: Boolean(content), finishReason: json?.result?.choices?.[0]?.finish_reason || json?.choices?.[0]?.finish_reason || null });
+      return { success: false, error: `Cloudflare پاسخ داد، اما خروجی ترانه JSON معتبر نبود یا متن خالی بود (مدل: ${model}).`, source: 'cloudflare' };
+    } catch (e: any) { return { success: false, error: `اتصال به Cloudflare ناموفق بود: ${e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'پاسخ مدل در ۲۸ ثانیه آماده نشد؛ تلاش با مدل جایگزین ادامه می‌یابد.' : (e?.message || 'خطای شبکه')}`, source: 'cloudflare' }; }
   }
 
   // 1. OpenRouter (Universal AI Gateway supporting all models & free tier tokens)
@@ -2323,14 +2324,14 @@ async function startServer() {
       groqApiKey = '',
       cloudflareApiToken = '',
       cloudflareAccountId = '',
-      cloudflareModel = 'meta/muse-spark-open',
+      cloudflareModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     } = req.body || {};
 
     // Use optional server-side keys as a fallback when the browser did not send one.
     const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
     const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
     const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
-    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || 'meta/muse-spark-open').trim();
+    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
 
     if (!prompt.trim()) {
       return res.status(400).json({ error: 'لطفاً پیام یا موضوع ترانه خود را بنویسید.' });
@@ -2514,6 +2515,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           primaryError: aiResp?.error || 'unknown provider error',
           groqConfigured: Boolean(effectiveGroqKey),
           cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
+          providerErrors: providerErrors.slice(-4),
         });
         break;
       }
@@ -2549,13 +2551,13 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       groqApiKey = '',
       cloudflareApiToken = '',
       cloudflareAccountId = '',
-      cloudflareModel = 'meta/muse-spark-open',
+      cloudflareModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     } = req.body || {};
 
     const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
     const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
     const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
-    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || 'meta/muse-spark-open').trim();
+    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
 
     if (!currentSong || !currentSong.lyrics) {
       return res.status(400).json({ error: 'اطلاعات ترانه فعلی برای ویرایش موجود نیست.' });
