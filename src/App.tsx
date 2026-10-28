@@ -524,7 +524,10 @@ export default function App() {
   const [groqApiKey, setGroqApiKey] = useState<string>(() => localStorage.getItem(GROQ_KEY_STORAGE) || '');
   const [cloudflareApiToken, setCloudflareApiToken] = useState<string>(() => localStorage.getItem(CLOUDFLARE_KEY_STORAGE) || '');
   const [cloudflareAccountId, setCloudflareAccountId] = useState<string>(() => localStorage.getItem(CLOUDFLARE_ACCOUNT_STORAGE) || '');
-  const [cloudflareModel, setCloudflareModel] = useState<string>(() => localStorage.getItem(CLOUDFLARE_MODEL_STORAGE) || 'meta/muse-spark-open');
+  const [cloudflareModel, setCloudflareModel] = useState<string>(() => {
+    const saved = localStorage.getItem(CLOUDFLARE_MODEL_STORAGE);
+    return !saved || saved === 'meta/muse-spark-open' ? '@cf/zai-org/glm-4.7-flash' : saved;
+  });
 
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
   const [testingOpenRouter, setTestingOpenRouter] = useState<boolean>(false);
@@ -1575,7 +1578,7 @@ ${song.composerNote}
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">کلید API سرویس Groq</label><input type="password" autoComplete="off" placeholder="gsk_..." value={groqApiKey} onChange={(e) => setGroqApiKey(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-emerald-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">محدودیت و سهمیه رایگان خود Groq همچنان برقرار است.</p></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare Account ID</label><input type="text" autoComplete="off" placeholder="شناسه حساب Cloudflare" value={cloudflareAccountId} onChange={(e) => setCloudflareAccountId(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare API Token</label><input type="password" autoComplete="off" placeholder="توکن محرمانه Cloudflare" value={cloudflareApiToken} onChange={(e) => setCloudflareApiToken(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
-              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">شناسه مدل Cloudflare</label><input type="text" autoComplete="off" placeholder="@cf/meta/llama-3.1-8b-instruct" value={cloudflareModel} onChange={(e) => setCloudflareModel(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">شناسه مدل را می‌توان تغییر داد؛ مدل‌های Workers AI معمولاً با @cf/ شروع می‌شوند.</p></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">شناسه مدل Cloudflare</label><input type="text" autoComplete="off" placeholder="@cf/zai-org/glm-4.7-flash" value={cloudflareModel} onChange={(e) => setCloudflareModel(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">شناسه مدل را می‌توان تغییر داد؛ مدل‌های Workers AI معمولاً با @cf/ شروع می‌شوند.</p></div>
               <p className="text-[10px] leading-relaxed text-amber-300/90">توکن را در GitHub یا چت منتشر نکن. در این نسخه، کلیدها در فضای ذخیره‌سازی مرورگر همین دستگاه ذخیره می‌شوند و رمزنگاری‌شده نیستند.</p>
             </div>
 
