@@ -1518,7 +1518,10 @@ LYRICS QUALITY RULES:
 - Write 24-34 meaningful lyric lines across 6-8 suitable sections. Use clear Suno section tags in English square brackets, for example [Intro: Dark Synth, Spoken Vocal], [Verse 1: Aggressive Raspy Rap], [Pre-Chorus: Rising Tension], [Chorus: Explosive Hook, Gang Vocals], [Verse 2: Double-Time Flow], [Bridge: Beat Drops, Spoken Vocal], [Final Chorus: Full Beat], [Outro: Beat Fades]. Adapt tags to the actual genre; do not copy these examples mechanically.
 - Every section must have a different job and move the story forward. The chorus must have a short, memorable, singable hook; verses need concrete details, fresh imagery, internal rhyme and natural cadence. Avoid filler, clichés, repeated lines, and rephrasing the same idea.
 - In Persian songs, ALL sung/spoken lyric lines must be natural, idiomatic Persian. Do not insert stray English, French, Turkish or other foreign words. Exceptions: English section tags in square brackets and proper names that genuinely belong in the theme. Never use a foreign word to patch a line.
-- Make end rhymes and internal rhymes intentional and natural; keep line lengths and stresses performable to the chosen beat. Do not claim a poetic meter if the lyrics do not support it.
+- Plan a clear stanza-level rhyme scheme (such as AABB or ABAB where appropriate). Genuine rhyme is a meaningful sound match, not merely matching final letters or repeating the same word.
+- Each couplet must make sense as a unit and connect logically or emotionally to the lines around it. Use natural Persian grammar; rewrite the whole couplet if a rhyme feels forced.
+- Do not claim a specific classical Persian meter unless it is genuinely maintained; otherwise keep the cadence singable to the chosen beat.
+- Remove filler lines, repeated ideas, and any word used only to force a rhyme.
 SUNO METADATA:
 - musicPrompt must be a specific, polished English production prompt, preserving and developing the user's supplied music prompt/style details when present (subgenre, tempo, acoustic space, saturation, instruments, vocal texture, arrangement and dynamics). Do not replace supplied details with unrelated instruments/styles.
 - tempoAndKey, instrumentation and excludeStyles must be concise, useful English. composerNote must be Persian and specific to the actual lyrics.
@@ -2003,21 +2006,24 @@ Before returning, silently check: all required fields exist; lyrics contain labe
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
 export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: string): SongQualityAudit {
-  const lines = lyrics
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.startsWith('('));
+  const lyricLines = lyrics.split('\n').map((l) => l.trim()).filter(Boolean);
+  const lines = lyricLines.filter((l) => !l.startsWith('[') && !l.startsWith('('));
+  const sectionTags = lyricLines.filter((l) => /^\[[^\]]+\]$/.test(l));
+  const normalizedLines = lines.map((l) => l.toLowerCase().replace(/[\u0640\u064B-\u065F،؛:!؟?.«»"'()\[\]]/g, '').replace(/\s+/g, ' ').trim());
+  const duplicateLineCount = normalizedLines.filter((line, index) => line && normalizedLines.indexOf(line) !== index).length;
+  const repeatedLineRatio = normalizedLines.length ? duplicateLineCount / normalizedLines.length : 1;
+  const isPersianRequest = /[\u0600-\u06FF]/.test(lyrics) && !/انگلیسی|english|دو زبانه|bilingual/i.test(`${prompt} ${genre}`);
 
-  // 1. Strict Minimum Length & Architecture Gate (جلوگیری از ترانه‌های کوتاه و ناقص)
-  if (lines.length < 18) {
+  // Tags do not count as sung lines. Enforce a complete, non-truncated song.
+  if (lines.length < 24) {
     return {
-      rhymeScore: 56,
-      meterScore: 60,
-      narrativeScore: 48,
-      overallScore: 54,
+      rhymeScore: 42,
+      meterScore: 55,
+      narrativeScore: 40,
+      overallScore: 45,
       verdict: 'نیاز به بهینه‌سازی',
       passed: false,
-      notes: `ترانه کوتاه و ناکامل است (${lines.length} سطر). یک اثر فاخر و حرفه‌ای ترانه‌سرایی باید دارای روایت کامل و چندپرده‌ای (شامل ورس ۱، کورس، ورس ۲، بریج و اوترو با حداقل ۲۰ الی ۳۲ مصراع) باشد تا داستان اصلی مضمون به کمال برسد.`,
+      notes: `ترانه فقط ${lines.length} سطر اجرایی دارد؛ حداقل ۲۴ سطر لازم است. ساختار را با معنای تازه گسترش بده؛ تکرار برای پُر کردن حجم پذیرفته نیست.`,
     };
   }
 
@@ -2028,6 +2034,8 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const hasPart2 = lyrics.includes('[Verse 2') || lyrics.includes('[Act 2') || lyrics.includes('[Scene 2') || lyrics.includes('[Bars 17') || lyrics.includes('[Stanza 2') || lyrics.includes('[Band 2') || lyrics.includes('[Bars 9-16');
   const hasBridgeOrClimax = lyrics.includes('[Bridge') || lyrics.includes('[Act 3') || lyrics.includes('[Guitar Solo') || lyrics.includes('[Drop') || lyrics.includes('[Climax');
   const hasOutro = lyrics.includes('[Outro') || lyrics.includes('[Epilogue') || lyrics.includes('[Act 4') || lyrics.includes('[Forood');
+  const hasAtLeastFiveTags = sectionTags.length >= 5;
+  const hasRequiredSunoArc = hasPart1 && hasChorus && hasPart2 && hasBridgeOrClimax && hasOutro;
 
   let structureScore = 50;
   if (hasPart1 && hasChorus) structureScore += 20;
@@ -2094,9 +2102,10 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const avgLen = wordLengths.reduce((a, b) => a + b, 0) / wordLengths.length;
   const variance = wordLengths.reduce((acc, len) => acc + Math.pow(len - avgLen, 2), 0) / wordLengths.length;
   const isSteadyRhythm = variance < 7.5;
+  // Rough cadence estimate only; this does not prove classical Persian prosody.
   const meterScore = isSteadyRhythm
-    ? Math.min(99, Math.round(89 + Math.random() * 8))
-    : Math.round(76 + Math.random() * 8);
+    ? Math.min(88, Math.round(78 + Math.max(0, 7.5 - variance)))
+    : Math.max(55, Math.round(73 - Math.min(18, variance)));
 
   // 5. Deep Storytelling Coherence & Semantic Narrative Arc (پیوند ارگانیک داستان، پیوستگی معنایی و قصه اصلی)
   const pWords = prompt
@@ -2112,8 +2121,11 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   narrativeScore = Math.min(99, Math.max(60, narrativeScore));
 
   // Overall Score & Strict Quality Threshold
+  const hasObviousLatinIntrusion = isPersianRequest && lines.filter((line) => /\b[a-zA-Z]{3,}\b/.test(line)).length >= 2;
+  const hasExcessiveLineDuplication = repeatedLineRatio > 0.08 || duplicateLineCount >= 2;
   const overallScore = Math.round(rhymeScore * 0.35 + meterScore * 0.3 + narrativeScore * 0.35);
-  const passed = overallScore >= 77 && rhymeScore >= 72 && lines.length >= 18 && hasPart2;
+  const passed = overallScore >= 77 && rhymeScore >= 72 && lines.length >= 24 &&
+    hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication && !hasObviousLatinIntrusion;
 
   let verdict: 'عالی و تأییدشده' | 'خوب' | 'نیاز به بهینه‌سازی' = 'عالی و تأییدشده';
   if (overallScore < 76 || !passed) {
@@ -2126,10 +2138,14 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   let notes = '';
   if (passed) {
     notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه با ساختار دراماتیک و غنی (${lines.length} سطر)، قافیه‌های طبیعی و هدفمند بدون کلمات زوری و پیوند استوار روایی در سبک «${cleanGenre}» تایید گردید.`;
-  } else if (lines.length < 18 || !hasPart2) {
-    notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه نیازمند بسط داستانی بیشتر است (${lines.length} سطر). برای روایت کامل قصه و جلوگیری از کوتاهی، بسط پرده دوم ماجرا و نقطه اوج اثر الزامی است.`;
+  } else if (lines.length < 24 || !hasRequiredSunoArc || !hasAtLeastFiveTags) {
+    notes = `ساختار ناقص است: ${lines.length} سطر اجرایی و ${sectionTags.length} برچسب بخش. ورس ۱ و ۲، کورس، بریج و اوترو را با برچسب‌های روشن سونو کامل کن.`;
+  } else if (hasExcessiveLineDuplication) {
+    notes = 'چند سطر تکراری یا تقریباً تکراری دیده می‌شود؛ آن‌ها را با تصویرها و اطلاعات تازه جایگزین کن.';
+  } else if (hasObviousLatinIntrusion) {
+    notes = 'در متن فارسی چند واژه لاتین نامتناسب دیده می‌شود؛ آن‌ها را حذف کن، مگر نام خاصی که واقعاً جزئی از موضوع باشد.';
   } else {
-    notes = `مکتب ادبی ترانه‌سرای فرخزاد: قافیه‌بندی یا پیوند مفهومی ابیات نیازمند صیقل بیشتر با خط داستانی موضوع است تا از کلمات زوری پرهیز شود.`;
+    notes = `قافیه‌بندی، خوش‌خوانی یا پیوند معنایی هنوز نیازمند بازنویسی است. برای جور شدن قافیه، واژه پایانی را دست‌کاری نکن؛ مصراع را از نو بر اساس معنای روایت بنویس. ژانر: «${cleanGenre}».`;
   }
 
   return {
@@ -2476,7 +2492,7 @@ CRITICAL MANDATES:
 ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversationHistory.slice(-3))}` : ''}`;
 
     // Execution with Rhyme, Meter & Narrative Validation & Automatic Retry Loop
-    const MAX_RETRIES = 0; // Keep generation within the free-host request window; do not repeat full model calls
+    const MAX_RETRIES = 1; // One bounded quality-driven rewrite; avoid repeated calls
     let attemptsCount = 0;
     let finalResult: SongGenerationResult | null = null;
     let finalSource = '';
@@ -2493,7 +2509,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         : `${userMessage}
 
 [RETRY MANDATE #${attemptsCount} - دستور اکید مکتب ترانه‌سرای فرخزاد: بازنویسی شاعرانه، افزایش طول و ارتقای قصه ترانه]:
-نسخه قبلی در سیستم اعتبارسنجی بک‌اند به دلیل کوتاهی بیش از حد یا ضعف در پیوند داستانی ابیات مردود شد (نمره قافیه: ${previousAudit?.rhymeScore || 65}، نمره وزن: ${previousAudit?.meterScore || 70}، نمره روایت: ${previousAudit?.narrativeScore || 60}).
+نسخه قبلی در کنترل کیفیت رد شد. دلیل بررسی: ${previousAudit?.notes || 'ساختار، قافیه یا پیوند معنایی نیازمند اصلاح است'} (نمره قافیه: ${previousAudit?.rhymeScore || 50}، نمره خوش‌خوانی: ${previousAudit?.meterScore || 60}، نمره روایت: ${previousAudit?.narrativeScore || 50}).
 تذکرات الزامی بازنویسی:
 ۱. ترانه نباید کوتاه باشد! یک اثر کامل و بلند (حداقل ۲۴ تا ۳۲ مصراع) متناسب با ساختار انتخابی بسرای.
 ۲. دقیقاً مثل یک شاعر و ترانه‌سرای مولف فکر کن و کل داستان «${prompt}» را با ظرافت و عمق روایت کن.
