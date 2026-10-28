@@ -1518,8 +1518,10 @@ LYRICS QUALITY RULES:
 - Write 24-34 meaningful lyric lines across 6-8 suitable sections. Use clear Suno section tags in English square brackets, for example [Intro: Dark Synth, Spoken Vocal], [Verse 1: Aggressive Raspy Rap], [Pre-Chorus: Rising Tension], [Chorus: Explosive Hook, Gang Vocals], [Verse 2: Double-Time Flow], [Bridge: Beat Drops, Spoken Vocal], [Final Chorus: Full Beat], [Outro: Beat Fades]. Adapt tags to the actual genre; do not copy these examples mechanically.
 - Every section must have a different job and move the story forward. The chorus must have a short, memorable, singable hook; verses need concrete details, fresh imagery, internal rhyme and natural cadence. Avoid filler, clichés, repeated lines, and rephrasing the same idea.
 - In Persian songs, ALL sung/spoken lyric lines must be natural, idiomatic Persian. Do not insert stray English, French, Turkish or other foreign words. Exceptions: English section tags in square brackets and proper names that genuinely belong in the theme. Never use a foreign word to patch a line.
-- Plan a clear stanza-level rhyme scheme (such as AABB or ABAB where appropriate). Genuine rhyme is a meaningful sound match, not merely matching final letters or repeating the same word.
+- Plan a clear stanza-level rhyme scheme (such as AABB or ABAB where appropriate). Pair lines within each stanza; do not let unrelated lines accidentally define the scheme. Genuine rhyme must sound natural when spoken aloud, not merely share a few written letters.
+- Never print rhyme-analysis markers such as (A), (B), AABB, or rhyme labels inside the actual lyrics. Those are planning notes, not sung words.
 - Each couplet must make sense as a unit and connect logically or emotionally to the lines around it. Use natural Persian grammar; rewrite the whole couplet if a rhyme feels forced.
+- Before returning, read each couplet as ordinary Persian prose: if the image, grammar, or cause-and-effect is unclear, replace it rather than preserving a rhyme.
 - Do not claim a specific classical Persian meter unless it is genuinely maintained; otherwise keep the cadence singable to the chosen beat.
 - Remove filler lines, repeated ideas, and any word used only to force a rhyme.
 SUNO METADATA:
@@ -2046,70 +2048,77 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   if (hasBridgeOrClimax) structureScore += 10;
   if (hasOutro) structureScore += 5;
 
-  // 3. Analyze Rhymes & Endings (بررسی دقیق علم قافیه، جلوگیری از قافیه‌های تصنعی و تکرارهای غیرمجاز)
-  const cleanEndings = lines.map((l) => {
-    const stripped = l.replace(/[،.؛:!؟?«»"']+/g, '').trim();
-    const parts = stripped.split(/\s+/);
-    return parts[parts.length - 1] || '';
-  });
+  // 3. Conservative, stanza-aware rhyme audit. This is a heuristic, not a substitute for a human poet.
+  // Normalize Persian/Arabic letter variants and ignore punctuation/half-spaces at line endings.
+  const rhymeGroups: string[][] = [];
+  let currentRhymeGroup: string[] = [];
+  for (const rawLine of lyricLines) {
+    if (/^\[[^\]]+\]$/.test(rawLine)) {
+      if (currentRhymeGroup.length) rhymeGroups.push(currentRhymeGroup);
+      currentRhymeGroup = [];
+      continue;
+    }
+    if (rawLine.startsWith('(') || !rawLine.trim()) continue;
+    const cleaned = rawLine
+      .replace(/[،؛:!؟?.«»"'()\[\]]/g, '')
+      .replace(/[\u064B-\u065F\u0640]/g, '')
+      .replace(/ي/g, 'ی').replace(/ك/g, 'ک')
+      .replace(/[\u200c\s]+/g, ' ')
+      .trim();
+    const words = cleaned.split(/\s+/);
+    const ending = (words[words.length - 1] || '').replace(/[^\u0600-\u06FF]/g, '');
+    if (ending) currentRhymeGroup.push(ending);
+  }
+  if (currentRhymeGroup.length) rhymeGroups.push(currentRhymeGroup);
 
   let rhymePairs = 0;
   let totalEvaluations = 0;
-  const rhymeWordFrequency: { [word: string]: number } = {};
-
-  for (const endWord of cleanEndings) {
-    if (endWord.length >= 2) {
-      rhymeWordFrequency[endWord] = (rhymeWordFrequency[endWord] || 0) + 1;
-    }
-  }
-
-  // Penalize lazy identical rhyme repetition (عیب شایع تکرار مکرر قافیه و کلمات وصله‌پینه‌ای)
-  const excessiveRepetitions = Object.values(rhymeWordFrequency).filter((count) => count > 3).length;
-
-  for (let i = 0; i < cleanEndings.length - 1; i++) {
-    const w1 = cleanEndings[i];
-    const w2 = cleanEndings[i + 1];
-    if (w1.length >= 2 && w2.length >= 2) {
+  const rhymeWordFrequency: Record<string, number> = {};
+  for (const group of rhymeGroups) {
+    for (const word of group) rhymeWordFrequency[word] = (rhymeWordFrequency[word] || 0) + 1;
+    // Score adjacent couplets within each section, never across unrelated section boundaries.
+    for (let i = 0; i + 1 < group.length; i += 2) {
+      const w1 = group[i];
+      const w2 = group[i + 1];
+      if (w1.length < 3 || w2.length < 3) continue;
       totalEvaluations++;
-      // Check last 2 or 3 letters matching
-      const end2Match = w1.slice(-2) === w2.slice(-2);
-      const end3Match = w1.length >= 3 && w2.length >= 3 && w1.slice(-3) === w2.slice(-3);
-      // Identical end words are repetition, not a rhyme pair.
-      if (w1 !== w2 && end3Match) {
-        rhymePairs += 1.35;
-      } else if (w1 !== w2 && end2Match) {
-        rhymePairs += 1.0;
-      }
+      if (w1 === w2) continue; // identical end words are repetition, not rhyme
+      const last3Match = w1.slice(-3) === w2.slice(-3);
+      const last2Match = w1.slice(-2) === w2.slice(-2);
+      if (last3Match) rhymePairs += 1;
+      else if (last2Match) rhymePairs += 0.7;
     }
   }
+  const excessiveRepetitions = Object.values(rhymeWordFrequency).filter((count) => count > 3).length;
+  const rawRhymeRatio = totalEvaluations > 0 ? rhymePairs / totalEvaluations : 0;
+  // Do not award a high baseline to a song with no assessable couplet rhymes.
+  let rhymeScore = totalEvaluations > 0
+    ? Math.round(38 + rawRhymeRatio * 62)
+    : 45;
+  if (excessiveRepetitions > 0) rhymeScore = Math.max(35, rhymeScore - excessiveRepetitions * 7);
 
-  // Also check alternating rhyme pairs (ABAB / ترانه چهارپاره یا ورس‌های موازی)
-  for (let i = 0; i < cleanEndings.length - 2; i++) {
-    const w1 = cleanEndings[i];
-    const w3 = cleanEndings[i + 2];
-    if (w1.length >= 2 && w3.length >= 2) {
-      totalEvaluations += 0.5;
-      if (w1 !== w3 && w1.slice(-2) === w3.slice(-2)) {
-        rhymePairs += 0.9;
-      }
+  // 4. Rough cadence proxy, evaluated within sections so a spoken intro does not distort a sung chorus.
+  // Word-count consistency is only a weak proxy for singability; it cannot certify aruz meter.
+  const cadenceGroups: number[][] = [];
+  let currentCadenceGroup: number[] = [];
+  for (const rawLine of lyricLines) {
+    if (/^\[[^\]]+\]$/.test(rawLine)) {
+      if (currentCadenceGroup.length) cadenceGroups.push(currentCadenceGroup);
+      currentCadenceGroup = [];
+      continue;
     }
+    if (rawLine.startsWith('(') || !rawLine.trim()) continue;
+    currentCadenceGroup.push(rawLine.trim().split(/\s+/).length);
   }
-
-  const rawRhymeRatio = totalEvaluations > 0 ? rhymePairs / totalEvaluations : 0.65;
-  let rhymeScore = Math.min(100, Math.max(62, Math.round(rawRhymeRatio * 82 + 38)));
-  if (excessiveRepetitions > 1) {
-    rhymeScore = Math.max(52, rhymeScore - excessiveRepetitions * 6);
-  }
-
-  // 4. Metric & Syllable Cadence Consistency (توازن اوزان عروضی/هجایی و ضرب‌آهنگ موسیقایی)
-  const wordLengths = lines.map((l) => l.split(/\s+/).length);
-  const avgLen = wordLengths.reduce((a, b) => a + b, 0) / wordLengths.length;
-  const variance = wordLengths.reduce((acc, len) => acc + Math.pow(len - avgLen, 2), 0) / wordLengths.length;
-  const isSteadyRhythm = variance < 7.5;
-  // Rough cadence estimate only; this does not prove classical Persian prosody.
-  const meterScore = isSteadyRhythm
-    ? Math.min(88, Math.round(78 + Math.max(0, 7.5 - variance)))
-    : Math.max(55, Math.round(73 - Math.min(18, variance)));
+  if (currentCadenceGroup.length) cadenceGroups.push(currentCadenceGroup);
+  const cadenceVariances = cadenceGroups.filter((g) => g.length >= 2).map((g) => {
+    const mean = g.reduce((a, b) => a + b, 0) / g.length;
+    return g.reduce((acc, n) => acc + Math.pow(n - mean, 2), 0) / g.length;
+  });
+  const variance = cadenceVariances.length
+    ? cadenceVariances.reduce((a, b) => a + b, 0) / cadenceVariances.length
+    : 10;
+  const meterScore = Math.max(38, Math.min(82, Math.round(82 - variance * 4)));
 
   // 5. Deep Storytelling Coherence & Semantic Narrative Arc (پیوند ارگانیک داستان، پیوستگی معنایی و قصه اصلی)
   const pWords = prompt
@@ -2128,7 +2137,7 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const hasObviousLatinIntrusion = isPersianRequest && lines.filter((line) => /\b[a-zA-Z]{3,}\b/.test(line)).length >= 2;
   const hasExcessiveLineDuplication = repeatedLineRatio > 0.08 || duplicateLineCount >= 2;
   const overallScore = Math.round(rhymeScore * 0.35 + meterScore * 0.3 + narrativeScore * 0.35);
-  const passed = overallScore >= 77 && rhymeScore >= 72 && lines.length >= 24 &&
+  const passed = overallScore >= 78 && rhymeScore >= 72 && meterScore >= 58 && narrativeScore >= 65 && lines.length >= 24 &&
     hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication && !hasObviousLatinIntrusion;
 
   let verdict: 'عالی و تأییدشده' | 'خوب' | 'نیاز به بهینه‌سازی' = 'عالی و تأییدشده';
@@ -2426,6 +2435,9 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
   * Under NO circumstances should you insert an archaic, clumsy, or irrelevant word just to force a rhyme!
   * If a rhyme doesn't naturally and elegantly serve the story's meaning, REWRITE THE WHOLE LINE so that the ending rhyme word is familiar, musical, emotionally resonant, and indispensable to the thought.
   * Rhymes must feel inevitable and organic, never forced.
+  * Do not include planning labels such as (A), (B), AABB, or rhyme annotations in the lyric text; only section tags belong in brackets.
+  * Keep a consistent rhyme pattern inside each stanza/couplet rather than comparing unrelated line endings across section boundaries.
+  * After drafting, read every couplet as natural Persian: reject unclear grammar, mixed metaphors with no connection, and lines whose only purpose is to match the rhyme.
 
 ══════════════════════════════════════════════════════════════════════
 3. DIVERSE SONG STRUCTURES (تنوع غنی در ساختارهای ۱۷ گانه ترانه):
