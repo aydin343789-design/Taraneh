@@ -1492,6 +1492,14 @@ async function callSelectedAIProvider(params: {
     return { success: false, source: 'studio' };
   }
 
+  // Keep prompts compact for free-tier providers: the full editorial prompt was
+  // consuming most of the TPM budget before the model could write any lyrics.
+  const compactSongSystemPrompt = `You are a skilled Persian songwriter and Suno music producer.
+Return exactly one valid JSON object, with no markdown and no text outside JSON.
+Required string fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles.
+Write original, meaningful lyrics with a coherent story, natural rhymes (never force rhyme), and 24-34 lyric lines. Use English section labels in square brackets. Match the user's selected language, genre, mood, singer and structure. Keep musicPrompt, tempoAndKey, instrumentation and excludeStyles in English. Keep composerNote in Persian. Do not include explanations outside the JSON.`;
+  const compactUserMessage = String(userMessage || '').slice(0, 9000);
+
   // Groq fallback: OpenAI-compatible chat completions API.
   if (provider === 'groq') {
     const key = (groqApiKey || '').trim();
@@ -1500,9 +1508,9 @@ async function callSelectedAIProvider(params: {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({ model: 'openai/gpt-oss-120b', messages: [
-          { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
-          { role: 'user', content: userMessage },
-        ], response_format: { type: 'json_object' }, temperature: 0.45, max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
+          { role: 'system', content: compactSongSystemPrompt },
+          { role: 'user', content: compactUserMessage },
+        ], response_format: { type: 'json_object' }, temperature: 0.45, max_completion_tokens: 4096, reasoning_effort: 'low' }), signal: AbortSignal.timeout(45000),
       });
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok) return { success: false, error: `خطای Groq (${response.status}): ${json?.error?.message || response.statusText}`, source: 'groq' };
@@ -1524,13 +1532,13 @@ async function callSelectedAIProvider(params: {
     try {
       const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/v1/chat/completions`;
       const messages = [
-        { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
-        { role: 'user', content: userMessage },
+        { role: 'system', content: compactSongSystemPrompt },
+        { role: 'user', content: compactUserMessage },
       ];
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ model, messages, max_tokens: 8192, temperature: 0.65 }),
+        body: JSON.stringify({ model, messages, max_tokens: 4096, temperature: 0.65 }),
         signal: AbortSignal.timeout(28000),
       });
       const json: any = await response.json().catch(() => ({}));
