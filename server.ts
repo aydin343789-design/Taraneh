@@ -1510,10 +1510,20 @@ async function callSelectedAIProvider(params: {
 
   // Keep prompts compact for free-tier providers: the full editorial prompt was
   // consuming most of the TPM budget before the model could write any lyrics.
-  const compactSongSystemPrompt = `You are a skilled Persian songwriter and Suno music producer.
-Return exactly one valid JSON object, with no markdown and no text outside JSON.
-Required string fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles.
-Write original, meaningful lyrics with a coherent story, natural rhymes (never force rhyme), and 24-34 lyric lines. Use English section labels in square brackets. Match the user's selected language, genre, mood, singer and structure. Keep musicPrompt, tempoAndKey, instrumentation and excludeStyles in English. Keep composerNote in Persian. Do not include explanations outside the JSON.`;
+  const compactSongSystemPrompt = `You are an expert Persian lyricist, rap writer, and Suno v4 producer. Quality matters more than speed.
+OUTPUT: Return exactly one valid JSON object only (no markdown fences or commentary) with these string fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles.
+LYRICS QUALITY RULES:
+- Write a real SONG, not prose, slogans, a summary, or repeated generic statements. Create a clear beginning, development, turning point, and memorable ending.
+- Follow the user's exact theme, chosen genre, song structure, mood, vocalist and requested language. Do not invent a different theme or blindly praise a person/event not requested.
+- Write 24-34 meaningful lyric lines across 6-8 suitable sections. Use clear Suno section tags in English square brackets, for example [Intro: Dark Synth, Spoken Vocal], [Verse 1: Aggressive Raspy Rap], [Pre-Chorus: Rising Tension], [Chorus: Explosive Hook, Gang Vocals], [Verse 2: Double-Time Flow], [Bridge: Beat Drops, Spoken Vocal], [Final Chorus: Full Beat], [Outro: Beat Fades]. Adapt tags to the actual genre; do not copy these examples mechanically.
+- Every section must have a different job and move the story forward. The chorus must have a short, memorable, singable hook; verses need concrete details, fresh imagery, internal rhyme and natural cadence. Avoid filler, clichés, repeated lines, and rephrasing the same idea.
+- In Persian songs, ALL sung/spoken lyric lines must be natural, idiomatic Persian. Do not insert stray English, French, Turkish or other foreign words. Exceptions: English section tags in square brackets and proper names that genuinely belong in the theme. Never use a foreign word to patch a line.
+- Make end rhymes and internal rhymes intentional and natural; keep line lengths and stresses performable to the chosen beat. Do not claim a poetic meter if the lyrics do not support it.
+SUNO METADATA:
+- musicPrompt must be a specific, polished English production prompt, preserving and developing the user's supplied music prompt/style details when present (subgenre, tempo, acoustic space, saturation, instruments, vocal texture, arrangement and dynamics). Do not replace supplied details with unrelated instruments/styles.
+- tempoAndKey, instrumentation and excludeStyles must be concise, useful English. composerNote must be Persian and specific to the actual lyrics.
+- Make every metadata field consistent with the actual song and selected style.
+Before returning, silently check: all required fields exist; lyrics contain labeled sections and 24-34 actual lyric lines; language is consistent; no stray foreign words; the story progresses; the chorus is memorable; the music prompt follows the user's supplied style. If any check fails, revise the output before returning JSON.`;
   const compactUserMessage = String(userMessage || '').slice(0, 9000);
 
   // Groq fallback: OpenAI-compatible chat completions API.
