@@ -2124,7 +2124,7 @@ async function startServer() {
   app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'taraneh-api' }));
 
   app.post('/api/test-providers', async (req, res) => {
-    const { groqApiKey = '', cloudflareApiToken = '', cloudflareAccountId = '', cloudflareModel = 'meta/muse-spark-open' } = req.body || {};
+    const { groqApiKey = '', cloudflareApiToken = '', cloudflareAccountId = '', cloudflareModel = '@cf/zai-org/glm-4.7-flash' } = req.body || {};
     const results: Record<string, { success: boolean; message: string }> = {};
     const testSystem = 'Return only a JSON object with exactly two string fields: title and lyrics. Use title "Connection test" and lyrics "Connection successful".';
     const testMessage = 'Connection test. Return the required JSON now.';
@@ -2139,7 +2139,7 @@ async function startServer() {
         provider: 'cloudflare',
         cloudflareApiToken: String(cloudflareApiToken).trim(),
         cloudflareAccountId: String(cloudflareAccountId).trim(),
-        cloudflareModel: String(cloudflareModel || 'meta/muse-spark-open').trim(),
+        cloudflareModel: String(cloudflareModel || '@cf/zai-org/glm-4.7-flash').trim(),
         systemPrompt: testSystem,
         userMessage: testMessage,
       });
@@ -2443,7 +2443,7 @@ CRITICAL MANDATES:
 ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversationHistory.slice(-3))}` : ''}`;
 
     // Execution with Rhyme, Meter & Narrative Validation & Automatic Retry Loop
-    const MAX_RETRIES = 2; // Up to 2 retries if rhyme, meter or narrative fails validation
+    const MAX_RETRIES = 0; // Keep generation within the free-host request window; do not repeat full model calls
     let attemptsCount = 0;
     let finalResult: SongGenerationResult | null = null;
     let finalSource = '';
@@ -2469,18 +2469,9 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
 
       let aiResp: any = null;
 
-      // OpenRouter is intentionally disabled. Try the user's configured cloud providers directly.
-      if (effectiveGroqKey) {
+      // Prefer Cloudflare's free-tier model first; use Groq as the fallback.
+      if (effectiveCloudflareToken && effectiveCloudflareAccount) {
         aiResp = await callSelectedAIProvider({
-          provider: 'groq',
-          groqApiKey: effectiveGroqKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
-        if (!aiResp?.success && aiResp?.error) providerErrors.push(aiResp.error);
-      }
-      if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
-        const fallback = await callSelectedAIProvider({
           provider: 'cloudflare',
           cloudflareApiToken: effectiveCloudflareToken,
           cloudflareAccountId: effectiveCloudflareAccount,
@@ -2488,7 +2479,16 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           systemPrompt,
           userMessage: attemptUserMsg,
         });
-        if (fallback.success) aiResp = { ...fallback, warning: 'Groq پاسخگو نبود؛ تولید به Cloudflare منتقل شد.' };
+        if (!aiResp?.success && aiResp?.error) providerErrors.push(aiResp.error);
+      }
+      if (!aiResp?.success && effectiveGroqKey) {
+        const fallback = await callSelectedAIProvider({
+          provider: 'groq',
+          groqApiKey: effectiveGroqKey,
+          systemPrompt,
+          userMessage: attemptUserMsg,
+        });
+        if (fallback.success) aiResp = { ...fallback, warning: 'Cloudflare پاسخگو نبود؛ تولید به Groq منتقل شد.' };
         else if (fallback.error) providerErrors.push(fallback.error);
       }
 
