@@ -1016,9 +1016,7 @@ ${song.composerNote}
         body: JSON.stringify({
           currentSong: aiEditState.song,
           instruction: instructionText,
-          provider: 'openrouter',
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: openrouterModel.trim() || 'deepseek/deepseek-r1:free',
+          provider: 'groq',
           groqApiKey: groqApiKey.trim(),
           cloudflareApiToken: cloudflareApiToken.trim(),
           cloudflareAccountId: cloudflareAccountId.trim(),
