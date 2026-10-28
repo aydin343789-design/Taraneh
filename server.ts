@@ -1502,7 +1502,7 @@ async function callSelectedAIProvider(params: {
         body: JSON.stringify({ model: 'openai/gpt-oss-120b', messages: [
           { role: 'system', content: `${systemPrompt}\n\nReturn ONLY the requested JSON object. No markdown fences or extra text.` },
           { role: 'user', content: userMessage },
-        ], temperature: 0.65, max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
+        ], response_format: { type: 'json_object' }, temperature: 0.45, max_tokens: 8192 }), signal: AbortSignal.timeout(45000),
       });
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok) return { success: false, error: `خطای Groq (${response.status}): ${json?.error?.message || response.statusText}`, source: 'groq' };
@@ -1510,7 +1510,7 @@ async function callSelectedAIProvider(params: {
       const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       let parsed: any;
       try { parsed = JSON.parse(cleaned); } catch { const match = content.match(/\{[\s\S]*\}/); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }
-      if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: 'groq (llama-3.3-70b-versatile)' };
+      if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: 'groq (openai/gpt-oss-120b)' };
       return { success: false, error: 'Groq پاسخ داد، اما خروجی ترانه JSON معتبر نبود.', source: 'groq' };
     } catch (e: any) { return { success: false, error: `اتصال به Groq ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'groq' }; }
   }
@@ -1536,7 +1536,10 @@ async function callSelectedAIProvider(params: {
       const json: any = await response.json().catch(() => ({}));
       if (!response.ok || json?.success === false) {
         const detail = json?.errors?.map((x: any) => x.message).filter(Boolean).join('; ') || json?.error?.message || response.statusText;
-        return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}`, source: 'cloudflare' };
+        const authHint = response.status === 401 || response.status === 403
+          ? ' برای رفع آن، از داشبورد Cloudflare بخش Workers AI > Use REST API یک توکن مخصوص Workers AI بسازید یا توکن فعلی را با دسترسی‌های Workers AI - Read و Workers AI - Edit بررسی کنید؛ Account ID نیز باید متعلق به همان حساب باشد.'
+          : '';
+        return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}.${authHint}`, source: 'cloudflare' };
       }
       const content = String(json?.result?.response || json?.result?.choices?.[0]?.message?.content || json?.choices?.[0]?.message?.content || '').trim();
       const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
