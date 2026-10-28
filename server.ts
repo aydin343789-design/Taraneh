@@ -2010,7 +2010,10 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const lines = lyricLines.filter((l) => !l.startsWith('[') && !l.startsWith('('));
   const sectionTags = lyricLines.filter((l) => /^\[[^\]]+\]$/.test(l));
   const normalizedLines = lines.map((l) => l.toLowerCase().replace(/[\u0640\u064B-\u065F،؛:!؟?.«»"'()\[\]]/g, '').replace(/\s+/g, ' ').trim());
-  const duplicateLineCount = normalizedLines.filter((line, index) => line && normalizedLines.indexOf(line) !== index).length;
+  const lineFrequency = new Map<string, number>();
+  normalizedLines.filter(Boolean).forEach((line) => lineFrequency.set(line, (lineFrequency.get(line) || 0) + 1));
+  // A chorus repeated twice is normal; flag only lines repeated more than twice.
+  const duplicateLineCount = Array.from(lineFrequency.values()).reduce((count, frequency) => count + Math.max(0, frequency - 2), 0);
   const repeatedLineRatio = normalizedLines.length ? duplicateLineCount / normalizedLines.length : 1;
   const isPersianRequest = /[\u0600-\u06FF]/.test(lyrics) && !/انگلیسی|english|دو زبانه|bilingual/i.test(`${prompt} ${genre}`);
 
@@ -2071,9 +2074,10 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
       // Check last 2 or 3 letters matching
       const end2Match = w1.slice(-2) === w2.slice(-2);
       const end3Match = w1.length >= 3 && w2.length >= 3 && w1.slice(-3) === w2.slice(-3);
-      if (end3Match) {
+      // Identical end words are repetition, not a rhyme pair.
+      if (w1 !== w2 && end3Match) {
         rhymePairs += 1.35;
-      } else if (end2Match) {
+      } else if (w1 !== w2 && end2Match) {
         rhymePairs += 1.0;
       }
     }
@@ -2085,7 +2089,7 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
     const w3 = cleanEndings[i + 2];
     if (w1.length >= 2 && w3.length >= 2) {
       totalEvaluations += 0.5;
-      if (w1.slice(-2) === w3.slice(-2)) {
+      if (w1 !== w3 && w1.slice(-2) === w3.slice(-2)) {
         rhymePairs += 0.9;
       }
     }
