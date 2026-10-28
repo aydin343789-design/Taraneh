@@ -2135,10 +2135,14 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
 
   // Overall Score & Strict Quality Threshold
   const hasObviousLatinIntrusion = isPersianRequest && lines.filter((line) => /\b[a-zA-Z]{3,}\b/.test(line)).length >= 2;
+  // Reject accidental foreign-script contamination (e.g. a Chinese character inside Persian lyrics).
+  // English Suno section tags are excluded from "lines" above, so these checks target lyric content only.
+  const hasForeignScriptIntrusion = isPersianRequest &&
+    /[\u3400-\u4DBF\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF\u0900-\u097F\u0E00-\u0E7F\u0400-\u04FF]/.test(lines.join(' '));
   const hasExcessiveLineDuplication = repeatedLineRatio > 0.08 || duplicateLineCount >= 2;
   const overallScore = Math.round(rhymeScore * 0.35 + meterScore * 0.3 + narrativeScore * 0.35);
   const passed = overallScore >= 78 && rhymeScore >= 72 && meterScore >= 58 && narrativeScore >= 65 && lines.length >= 24 &&
-    hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication && !hasObviousLatinIntrusion;
+    hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication && !hasObviousLatinIntrusion && !hasForeignScriptIntrusion;
 
   let verdict: 'عالی و تأییدشده' | 'خوب' | 'نیاز به بهینه‌سازی' = 'عالی و تأییدشده';
   if (overallScore < 76 || !passed) {
@@ -2157,6 +2161,8 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
     notes = 'چند سطر تکراری یا تقریباً تکراری دیده می‌شود؛ آن‌ها را با تصویرها و اطلاعات تازه جایگزین کن.';
   } else if (hasObviousLatinIntrusion) {
     notes = 'در متن فارسی چند واژه لاتین نامتناسب دیده می‌شود؛ آن‌ها را حذف کن، مگر نام خاصی که واقعاً جزئی از موضوع باشد.';
+  } else if (hasForeignScriptIntrusion) {
+    notes = 'نویسه‌ای از خطی نامرتبط با زبان درخواستی در متن پیدا شد؛ ترانه را کاملاً به زبان درخواستی بازنویسی کن و هیچ نویسهٔ چینی، ژاپنی، کره‌ای، سیریلیک یا خط بیگانه‌ای را وارد شعر نکن.';
   } else {
     notes = `قافیه‌بندی، خوش‌خوانی یا پیوند معنایی هنوز نیازمند بازنویسی است. برای جور شدن قافیه، واژه پایانی را دست‌کاری نکن؛ مصراع را از نو بر اساس معنای روایت بنویس. ژانر: «${cleanGenre}».`;
   }
@@ -2563,14 +2569,15 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         aiResp.result.qualityAudit = audit;
         previousAudit = audit;
 
-        // If audit passed or we reached maximum retries, accept and return
-        if (audit.passed || attemptsCount > MAX_RETRIES) {
+        // Never deliver a failed lyric as if it were an acceptable result.
+        if (audit.passed) {
           finalResult = aiResp.result;
           finalSource = aiResp.source;
           finalWarning = aiResp.warning;
           break;
         }
-        // If not passed and retries remain, loop continues to re-generate with feedback
+        // One quality-driven rewrite is allowed. If it still fails, return a clear quality error below.
+        if (attemptsCount > MAX_RETRIES) break;
       } else {
         // Never stop at the primary provider error. All configured fallbacks have already been tried;
         // continue to the local studio engine so the user still gets a result.
@@ -2590,6 +2597,15 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         result: finalResult,
         source: finalSource,
         warning: finalWarning,
+      });
+    }
+
+    // If generation succeeded but the lyric failed quality checks twice, refuse to label it as an acceptable result.
+    if (previousAudit && !previousAudit.passed) {
+      return res.status(422).json({
+        error: 'ترانه پس از بازنویسی خودکار هنوز از کنترل کیفیت عبور نکرد. برای جلوگیری از تحویل شعر ضعیف، این نسخه تأیید نشده است؛ موضوع را کمی دقیق‌تر کن یا دوباره تلاش کن.',
+        qualityAudit: previousAudit,
+        attemptsMade: attemptsCount,
       });
     }
 
