@@ -2012,8 +2012,8 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const normalizedLines = lines.map((l) => l.toLowerCase().replace(/[\u0640\u064B-\u065F،؛:!؟?.«»"'()\[\]]/g, '').replace(/\s+/g, ' ').trim());
   const lineFrequency = new Map<string, number>();
   normalizedLines.filter(Boolean).forEach((line) => lineFrequency.set(line, (lineFrequency.get(line) || 0) + 1));
-  // A chorus repeated twice is normal; flag only lines repeated more than twice.
-  const duplicateLineCount = Array.from(lineFrequency.values()).reduce((count, frequency) => count + Math.max(0, frequency - 2), 0);
+  // Repeated choruses are normal; flag only lines repeated more than three times.
+  const duplicateLineCount = Array.from(lineFrequency.values()).reduce((count, frequency) => count + Math.max(0, frequency - 3), 0);
   const repeatedLineRatio = normalizedLines.length ? duplicateLineCount / normalizedLines.length : 1;
   const isPersianRequest = /[\u0600-\u06FF]/.test(lyrics) && !/انگلیسی|english|دو زبانه|bilingual/i.test(`${prompt} ${genre}`);
 
