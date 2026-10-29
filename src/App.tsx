@@ -160,6 +160,7 @@ const GROQ_KEY_STORAGE = 'taraneh_groq_api_key_v1';
 const CLOUDFLARE_KEY_STORAGE = 'taraneh_cloudflare_api_token_v1';
 const CLOUDFLARE_ACCOUNT_STORAGE = 'taraneh_cloudflare_account_id_v1';
 const CLOUDFLARE_MODEL_STORAGE = 'taraneh_cloudflare_model_v1';
+const GEMINI_KEY_STORAGE = 'taraneh_gemini_api_key_v1';
 
 // 1. DIVERSE GENRES & STYLES (شامل انواع سبک‌های رپ و موسیقی بدون تکرار)
 export const GENRE_OPTIONS = [
@@ -522,6 +523,7 @@ export default function App() {
   });
 
   const [groqApiKey, setGroqApiKey] = useState<string>(() => localStorage.getItem(GROQ_KEY_STORAGE) || '');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => localStorage.getItem(GEMINI_KEY_STORAGE) || '');
   const [cloudflareApiToken, setCloudflareApiToken] = useState<string>(() => localStorage.getItem(CLOUDFLARE_KEY_STORAGE) || '');
   const [cloudflareAccountId, setCloudflareAccountId] = useState<string>(() => localStorage.getItem(CLOUDFLARE_ACCOUNT_STORAGE) || '');
   const [cloudflareModel, setCloudflareModel] = useState<string>(() => {
@@ -626,13 +628,14 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(GROQ_KEY_STORAGE, groqApiKey);
+      localStorage.setItem(GEMINI_KEY_STORAGE, geminiApiKey);
       localStorage.setItem(CLOUDFLARE_KEY_STORAGE, cloudflareApiToken);
       localStorage.setItem(CLOUDFLARE_ACCOUNT_STORAGE, cloudflareAccountId);
       localStorage.setItem(CLOUDFLARE_MODEL_STORAGE, cloudflareModel);
     } catch {
       // Ignore storage errors; never log API credentials.
     }
-  }, [groqApiKey, cloudflareApiToken, cloudflareAccountId, cloudflareModel]);
+  }, [groqApiKey, geminiApiKey, cloudflareApiToken, cloudflareAccountId, cloudflareModel]);
 
   const activeSession =
     sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -724,6 +727,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           groqApiKey: groqApiKey.trim(),
+          geminiApiKey: geminiApiKey.trim(),
           cloudflareApiToken: cloudflareApiToken.trim(),
           cloudflareAccountId: cloudflareAccountId.trim(),
           cloudflareModel: cloudflareModel.trim(),
@@ -732,8 +736,19 @@ export default function App() {
       const data = await resp.json().catch(() => ({}));
       const groq = data?.results?.groq;
       const cloudflare = data?.results?.cloudflare;
-      const message = `Groq: ${groq?.message || 'بدون پاسخ'} | Cloudflare: ${cloudflare?.message || 'بدون پاسخ'}`;
-      setKeyTestStatus({ success: !!data?.ok, message });
+      let geminiMessage = 'کلید وارد نشده است';
+      let geminiOk = false;
+      if (geminiApiKey.trim()) {
+        const geminiResp = await fetch(apiUrl('/api/test-key'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: 'gemini', apiKey: geminiApiKey.trim() }),
+        });
+        const geminiData = await geminiResp.json().catch(() => ({}));
+        geminiOk = !!geminiData?.valid;
+        geminiMessage = geminiData?.message || 'آزمایش Gemini نتیجه‌ای نداد.';
+      }
+      const message = `Groq: ${groq?.message || 'بدون پاسخ'} | Gemini: ${geminiMessage} | Cloudflare: ${cloudflare?.message || 'بدون پاسخ'}`;
+      setKeyTestStatus({ success: !!data?.ok || geminiOk, message });
     } catch (e: any) {
       setKeyTestStatus({ success: false, message: `خطای اتصال به سرور: ${e?.message || 'خطای شبکه'}` });
     } finally {
@@ -1576,6 +1591,7 @@ ${song.composerNote}
             <div className="p-3.5 rounded-xl bg-[#141724] border border-emerald-500/20 space-y-3">
               <div className="flex items-center justify-between gap-2"><div className="text-xs font-bold text-emerald-300">ترتیب اتصال هوش مصنوعی: Groq سپس Cloudflare</div><span className="text-[10px] text-[#A69F91]">کلیدهای شخصی شما</span></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">کلید API سرویس Groq</label><input type="password" autoComplete="off" placeholder="gsk_..." value={groqApiKey} onChange={(e) => setGroqApiKey(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-emerald-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">محدودیت و سهمیه رایگان خود Groq همچنان برقرار است.</p></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">کلید API گوگل Gemini (برای بازنویسی و پشتیبان)</label><input type="password" autoComplete="off" placeholder="AIza..." value={geminiApiKey} onChange={(e) => setGeminiApiKey(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-blue-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">Gemini بیشتر هنگام نیاز به اصلاح ترانه یا خرابی مدل‌های دیگر استفاده می‌شود تا از تولید دوبارهٔ کامل پرهیز شود.</p></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare Account ID</label><input type="text" autoComplete="off" placeholder="شناسه حساب Cloudflare" value={cloudflareAccountId} onChange={(e) => setCloudflareAccountId(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare API Token</label><input type="password" autoComplete="off" placeholder="توکن محرمانه Cloudflare" value={cloudflareApiToken} onChange={(e) => setCloudflareApiToken(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">شناسه مدل Cloudflare</label><input type="text" autoComplete="off" placeholder="@cf/meta/llama-3.3-70b-instruct-fp8-fast" value={cloudflareModel} onChange={(e) => setCloudflareModel(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">شناسه مدل را می‌توان تغییر داد؛ مدل‌های Workers AI معمولاً با @cf/ شروع می‌شوند.</p></div>
@@ -1590,7 +1606,7 @@ ${song.composerNote}
             {/* Modal Footer */}
             <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-3 flex-wrap">
               <span className="text-[11px] text-[#8E8779]">
-                کلیدها فقط برای اتصال مستقیم به Groq و Cloudflare استفاده می‌شوند.
+                کلیدها برای اتصال به Groq، Gemini و Cloudflare استفاده می‌شوند.
               </span>
               <div className="flex items-center gap-2">
                 <button type="button" disabled={testingOpenRouter} onClick={handleTestProviders} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs">
