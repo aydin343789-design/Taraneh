@@ -2728,10 +2728,6 @@ REQUIREMENTS:
       systemPrompt: editPrompt,
       userMessage,
     });
-    if (!aiResp?.success && effectiveGeminiKey) {
-      const geminiFallback = await callSelectedAIProvider({ provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: editPrompt, userMessage });
-      if (geminiFallback.success) aiResp = { ...geminiFallback, warning: 'ویرایش به Gemini منتقل شد.' };
-    }
     if (!aiResp?.success) {
       if (effectiveGroqKey) {
         const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt: editPrompt, userMessage });
