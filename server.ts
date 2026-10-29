@@ -2389,6 +2389,7 @@ async function startServer() {
       openrouterApiKey = '',
       openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
       groqApiKey = '',
+      geminiApiKey = '',
       cloudflareApiToken = '',
       cloudflareAccountId = '',
       cloudflareModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -2396,6 +2397,7 @@ async function startServer() {
 
     // Use optional server-side keys as a fallback when the browser did not send one.
     const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
+    const effectiveGeminiKey = (geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
     const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
     const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
     const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
@@ -2517,6 +2519,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
     const MAX_RETRIES = 1; // One bounded quality-driven rewrite; avoid repeated calls
     let attemptsCount = 0;
     let finalResult: SongGenerationResult | null = null;
+    let lastGeneratedResult: SongGenerationResult | null = null;
     let finalSource = '';
     let finalWarning: string | undefined = undefined;
     let previousAudit: SongQualityAudit | null = null;
@@ -2563,7 +2566,17 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         else if (fallback.error) providerErrors.push(fallback.error);
       }
 
+      // Gemini is a fallback for provider/format failures, using the user's key when configured.
+      if (!aiResp?.success && effectiveGeminiKey) {
+        const geminiFallback = await callSelectedAIProvider({
+          provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt, userMessage: attemptUserMsg,
+        });
+        if (geminiFallback.success) aiResp = { ...geminiFallback, warning: 'تولیدکننده‌های اولیه پاسخ مناسب ندادند؛ ترانه با Gemini تولید شد.' };
+        else if (geminiFallback.error) providerErrors.push(geminiFallback.error);
+      }
+
       if (aiResp && aiResp.success && aiResp.result) {
+        lastGeneratedResult = aiResp.result;
         const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt);
         audit.attemptsMade = attemptsCount;
         aiResp.result.qualityAudit = audit;
@@ -2600,13 +2613,39 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       });
     }
 
-    // If generation succeeded but the lyric failed quality checks twice, refuse to label it as an acceptable result.
-    if (previousAudit && !previousAudit.passed) {
-      return res.status(422).json({
-        error: 'ترانه پس از بازنویسی خودکار هنوز از کنترل کیفیت عبور نکرد. برای جلوگیری از تحویل شعر ضعیف، این نسخه تأیید نشده است؛ موضوع را کمی دقیق‌تر کن یا دوباره تلاش کن.',
-        qualityAudit: previousAudit,
-        attemptsMade: attemptsCount,
+    // If the heuristic audit fails, ask Gemini to repair the existing song rather than generating from scratch.
+    // This keeps the rewrite focused and avoids spending tokens on a second full composition.
+    if (!finalResult && lastGeneratedResult && previousAudit && !previousAudit.passed && effectiveGeminiKey) {
+      const rewriteSystem = `You are a meticulous Persian songwriter and lyric editor. Return exactly one valid JSON object with the same song fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles. Rewrite the supplied existing song, preserving its intended theme, genre, emotional point of view and useful lines. Fix meaning, natural Persian grammar, stanza-level rhyme, singable cadence, narrative continuity, accidental foreign-script characters and repeated filler. Never force a rhyme with an unrelated word. Keep useful Suno section tags in English square brackets. Aim for 24-34 lyric lines. Do not explain your edits outside the JSON. Keep music metadata consistent with the song.`;
+      const rewriteMessage = `Repair and complete this existing song, not a brand-new unrelated song.\nTheme: ${String(prompt).slice(0, 1200)}\nGenre: ${musicGenre}\nStructure: ${songStructure}\nMood: ${mood}\nLanguage: ${langString}\nQuality audit notes: ${previousAudit.notes || 'Improve rhyme, cadence and narrative coherence.'}\nAudit scores: rhyme ${previousAudit.rhymeScore}, cadence ${previousAudit.meterScore}, narrative ${previousAudit.narrativeScore}.\nExisting song JSON:\n${JSON.stringify(lastGeneratedResult).slice(0, 10000)}`;
+      const geminiRewrite = await callSelectedAIProvider({
+        provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: rewriteSystem, userMessage: rewriteMessage,
       });
+      if (geminiRewrite.success && geminiRewrite.result) {
+        const rewritten = geminiRewrite.result;
+        const rewriteAudit = analyzeSongQualityAudit(rewritten.lyrics || '', musicGenre, prompt);
+        rewriteAudit.attemptsMade = attemptsCount + 1;
+        rewritten.qualityAudit = rewriteAudit;
+        finalResult = rewritten;
+        finalSource = geminiRewrite.source;
+        finalWarning = rewriteAudit.passed
+          ? 'ترانه پس از بازنویسی متمرکز Gemini بررسی شد.'
+          : 'Gemini ترانه را بازنویسی کرد؛ ارزیابی خودکار هنوز چند ایراد احتمالی نشان می‌دهد و این ارزیابی تضمین ادبی نیست.';
+      } else {
+        providerErrors.push(geminiRewrite.error || 'Gemini نتوانست نسخه را بازنویسی کند.');
+      }
+    }
+
+    // Quality checks are advisory: never discard an available song solely because a heuristic score is low.
+    if (!finalResult && lastGeneratedResult) {
+      finalResult = lastGeneratedResult;
+      finalSource = 'best-available';
+      finalWarning = 'ترانه تحویل داده شد، اما بررسی خودکار چند ایراد احتمالی نشان داده است؛ لطفاً متن را هم مرور کن.';
+      finalResult.qualityAudit = previousAudit || undefined;
+    }
+
+    if (finalResult) {
+      return res.json({ result: finalResult, source: finalSource, warning: finalWarning });
     }
 
     // Do not silently substitute canned/local lyrics when cloud providers fail.
