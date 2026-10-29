@@ -2414,7 +2414,7 @@ async function startServer() {
     const systemPrompt = `You are the master engine of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio), inspired by the poetic audacity, intellectual depth, vivid imagery, and emotional truth of modern Persian literature (مکتب ادبی و جسارت هنری فروغ و فریدون فرخزاد) and world-class Suno AI (v4) music production.
 The user wants a brand-new, non-repetitive song composition tailored specifically to:
 - Exact User Theme/Story: "${prompt}"
-- Selected Music Genre / Style: "${musicGenre}"
+- Selected Music Genre / Style (IMMUTABLE PRIMARY GENRE): "${musicGenre}"
 - Song Structure / Type: "${songStructure}"
 - Tempo & BPM: "${tempoBpm}"
 - Vocalist preference: "${vocalType}"
@@ -2428,6 +2428,8 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
 - NEITHER the lyrics NOR the Suno "musicPrompt" may EVER be repetitive, templated, or generic!
 - FOR SUNO V4 "musicPrompt":
   * NEVER output repetitive boilerplate prompts.
+  * GENRE LOCK: the exact selected primary genre is "${musicGenre}" and must not be changed. You may add only compatible subgenres. Never turn house/techno/electronic into boom-bap/rap, or rap into house/techno, unless the selected genre explicitly contains both.
+  * The musicPrompt MUST start with the exact selected genre/style wording: "${musicGenre}". Keep the selected tempo (${tempoBpm}) and do not invent a different primary style.
   * Every single generation must feature a rich, surgical sound-design blueprint tailored specifically to "${musicGenre}", "${mood}", and the narrative of "${prompt}".
   * Must include: Exact Primary & Secondary Micro-Genres (e.g. "Persian Alternative Rock, Post-Punk Revival"), Dynamic BPM, Musical Key Signature with Harmonic Modulation (e.g. "C Minor modulating to E-flat Major in Chorus"), Physical & Acoustic Sound Spaces (e.g. "Abbey Road Studio 2 acoustic room, vintage EMT 140 plate reverb, subtle tape flutter, 2-inch analog tape saturation, wide binaural stereo panorama"), Precise Instrument Roster (e.g. "1974 Fender Rhodes, Upright Double Bass, Yamaha C7 Concert Grand Piano, Distorted Moog Sub 37, Brushed Zildjian Cymbals, Solo Armenian Duduk"), and Specific Vocal Delivery & Processing (e.g. "Gritty soul-baring male chest voice, intimate close-mic whisper, layered multi-octave falsetto harmonies, zero autotune, subtle tube warmth").
   * Comprehensive negative exclusions in "excludeStyles" (e.g. "mumble rap, cheerful synth brass, autotune artifacts, robotic monotone, elevator music").
@@ -2511,7 +2513,7 @@ Seed: ${randomNonce}
 CRITICAL MANDATES:
 1. Act like a master storyteller from the first line to the last. Every line MUST logically connect to the previous line and lead to the next line (زنجیره داستانی خط به خط).
 2. The meaning of the song is essential. DO NOT pick any word just to make a rhyme! If a rhyme doesn't fit the natural story, restructure the entire line.
-3. Provide a completely original, non-repetitive, surgical Suno v4 "musicPrompt" (sub-genres, acoustic space, tape saturation, key modulation, exact instruments, vocal processing).
+3. Provide a completely original, non-repetitive Suno v4 "musicPrompt", but LOCK its primary genre to exactly "${musicGenre}"; do not switch to an unrelated genre. Begin the prompt with "${musicGenre}" and keep the requested tempo ${tempoBpm}.
 4. Full length: Rich storytelling sections (minimum 24-34 lines total). Never truncate!
 ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversationHistory.slice(-3))}` : ''}`;
 
@@ -2668,12 +2670,14 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       openrouterApiKey = '',
       openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
       groqApiKey = '',
+      geminiApiKey = '',
       cloudflareApiToken = '',
       cloudflareAccountId = '',
       cloudflareModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     } = req.body || {};
 
     const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
+    const effectiveGeminiKey = (geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
     const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
     const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
     const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
@@ -2707,11 +2711,15 @@ REQUIREMENTS:
 5. STRICT ANTI-REPETITION: Keep lyrics and musicPrompt fresh, avoiding cliche repetitions or generic filler.
 6. Keep English section headers in lyrics: [Intro: ...], [Verse 1: ...], [Chorus: ...], [Verse 2: ...], [Bridge: ...], [Outro: ...].
 7. Update "musicPrompt" in authentic English with surgical precision (micro-genre, acoustic space, instruments, BPM, key, audio engineering).
-8. In "composerNote", explain in Persian what poetic and narrative modifications were made.`;
+8. In "composerNote", explain in Persian what poetic and narrative modifications were made.
+9. GENRE LOCK: preserve the existing song's exact primary genre. Do not switch between electronic/house/techno and rap/boom-bap, rock, orchestral, or any other unrelated style. Only add compatible subgenres; the musicPrompt must begin by naming the existing song's primary genre.
+10. Keep the original musicPrompt's genre, BPM and key unless the user explicitly asks to change them.`;
 
     const userMessage = `Edit and refine this song based on: "${instruction}". Return the complete updated JSON.`;
 
-    let aiResp = await callSelectedAIProvider({
+    let aiResp = effectiveGeminiKey
+      ? await callSelectedAIProvider({ provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: editPrompt, userMessage })
+      : await callSelectedAIProvider({
       provider: effectiveGroqKey ? 'groq' : 'cloudflare',
       groqApiKey: effectiveGroqKey,
       cloudflareApiToken: effectiveCloudflareToken,
@@ -2720,6 +2728,10 @@ REQUIREMENTS:
       systemPrompt: editPrompt,
       userMessage,
     });
+    if (!aiResp?.success && effectiveGeminiKey) {
+      const geminiFallback = await callSelectedAIProvider({ provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: editPrompt, userMessage });
+      if (geminiFallback.success) aiResp = { ...geminiFallback, warning: 'ویرایش به Gemini منتقل شد.' };
+    }
     if (!aiResp?.success) {
       if (effectiveGroqKey) {
         const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt: editPrompt, userMessage });
@@ -2739,13 +2751,7 @@ REQUIREMENTS:
       );
       audit.attemptsMade = 1;
       aiResp.result.qualityAudit = audit;
-      if (!audit.passed) {
-        return res.status(422).json({
-          error: 'نسخهٔ ویرایش‌شده از کنترل کیفیت عبور نکرد؛ برای جلوگیری از تحویل متن ضعیف، آن را تأیید نکردم. دستور ویرایش را دقیق‌تر کن یا دوباره تلاش کن.',
-          qualityAudit: audit,
-        });
-      }
-      return res.json({ result: aiResp.result, source: aiResp.source });
+      return res.json({ result: aiResp.result, source: aiResp.source, warning: audit.passed ? aiResp.warning : 'نسخه تحویل داده شد، اما ارزیابی خودکار هنوز چند ایراد احتمالی نشان می‌دهد.' });
     }
 
     return res.status(502).json({
