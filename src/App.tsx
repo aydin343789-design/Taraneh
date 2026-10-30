@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import royalPersianEmblem from './assets/images/royal_persian_emblem_1791230254307.jpg';
 import {
   Menu,
   X,
@@ -1303,9 +1304,7 @@ ${song.composerNote}
           <aside className="relative z-50 w-80 max-w-[85vw] bg-[#0E1017] border-l border-white/10 flex flex-col h-full shadow-2xl transition-transform animate-in slide-in-from-right duration-200">
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
-                  <Music className="w-4 h-4" />
-                </div>
+                <img src={royalPersianEmblem} alt="نشان شیر و خورشید" className="w-10 h-10 rounded-xl object-cover border border-[#D4AF37]/50 shadow-md" />
                 <div>
                   <h2 className="text-sm font-bold text-[#F4EFE6]">
                     ترانه سرای فرخزاد
@@ -2335,7 +2334,9 @@ ${song.composerNote}
               <Menu className="w-5 h-5" />
             </button>
 
-            <div>
+            <div className="flex items-center gap-3 min-w-0">
+              <img src={royalPersianEmblem} alt="نشان شیر و خورشید" className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-[#D4AF37]/50 shadow-md shrink-0" />
+              <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-base font-bold text-[#F4EFE6] tracking-tight">
                   ترانه سرای فرخزاد
