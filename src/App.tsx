@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import royalPersianEmblem from './assets/images/royal_persian_emblem_1791230254307.jpg';
 import {
   Menu,
   X,
@@ -156,6 +157,11 @@ const STORAGE_KEY = 'chakameh_chatbot_sessions_v6';
 const SAVED_SONGS_KEY = 'chakameh_saved_library_songs_v1';
 const OPENROUTER_KEY_STORAGE = 'chakameh_openrouter_api_key_v1';
 const OPENROUTER_MODEL_STORAGE = 'chakameh_openrouter_model_v1';
+const GROQ_KEY_STORAGE = 'taraneh_groq_api_key_v1';
+const CLOUDFLARE_KEY_STORAGE = 'taraneh_cloudflare_api_token_v1';
+const CLOUDFLARE_ACCOUNT_STORAGE = 'taraneh_cloudflare_account_id_v1';
+const CLOUDFLARE_MODEL_STORAGE = 'taraneh_cloudflare_model_v1';
+const GEMINI_KEY_STORAGE = 'taraneh_gemini_api_key_v1';
 
 // 1. DIVERSE GENRES & STYLES (شامل انواع سبک‌های رپ و موسیقی بدون تکرار)
 export const GENRE_OPTIONS = [
@@ -347,6 +353,7 @@ export const DEFAULT_LANGUAGES = [
   'مازندرانی',
   'عربی',
   'فرانسوی',
+  'عبری',
 ];
 
 // 7. DIVERSE QUICK PROMPTS COVERING ALL GENRES
@@ -452,6 +459,15 @@ export const QUICK_PROMPTS = [
   },
 ];
 
+const API_BASE_STORAGE = 'taraneh_api_base_url';
+
+const DEFAULT_API_BASE = 'https://taraneh-api.onrender.com';
+
+function apiUrl(path: string): string {
+  const base = (localStorage.getItem(API_BASE_STORAGE) || DEFAULT_API_BASE).trim().replace(/\/$/, '');
+  return base + path;
+}
+
 export default function App() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     try {
@@ -506,6 +522,15 @@ export default function App() {
 
   const [openrouterModel, setOpenrouterModel] = useState<string>(() => {
     return localStorage.getItem(OPENROUTER_MODEL_STORAGE) || 'deepseek/deepseek-r1:free';
+  });
+
+  const [groqApiKey, setGroqApiKey] = useState<string>(() => localStorage.getItem(GROQ_KEY_STORAGE) || '');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => localStorage.getItem(GEMINI_KEY_STORAGE) || '');
+  const [cloudflareApiToken, setCloudflareApiToken] = useState<string>(() => localStorage.getItem(CLOUDFLARE_KEY_STORAGE) || '');
+  const [cloudflareAccountId, setCloudflareAccountId] = useState<string>(() => localStorage.getItem(CLOUDFLARE_ACCOUNT_STORAGE) || '');
+  const [cloudflareModel, setCloudflareModel] = useState<string>(() => {
+    const saved = localStorage.getItem(CLOUDFLARE_MODEL_STORAGE);
+    return !saved || saved === 'meta/muse-spark-open' || saved === '@cf/zai-org/glm-4.7-flash' ? '@cf/meta/llama-3.3-70b-instruct-fp8-fast' : saved;
   });
 
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
@@ -602,6 +627,18 @@ export default function App() {
     }
   }, [openrouterApiKey, openrouterModel]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(GROQ_KEY_STORAGE, groqApiKey);
+      localStorage.setItem(GEMINI_KEY_STORAGE, geminiApiKey);
+      localStorage.setItem(CLOUDFLARE_KEY_STORAGE, cloudflareApiToken);
+      localStorage.setItem(CLOUDFLARE_ACCOUNT_STORAGE, cloudflareAccountId);
+      localStorage.setItem(CLOUDFLARE_MODEL_STORAGE, cloudflareModel);
+    } catch {
+      // Ignore storage errors; never log API credentials.
+    }
+  }, [groqApiKey, geminiApiKey, cloudflareApiToken, cloudflareAccountId, cloudflareModel]);
+
   const activeSession =
     sessions.find((s) => s.id === activeSessionId) || sessions[0];
 
@@ -683,41 +720,39 @@ export default function App() {
     setTimeout(() => setKeySaveMessage(''), 3500);
   };
 
-  const handleTestOpenRouterKey = async (overrideKey?: string, overrideModel?: string) => {
-    const k = (overrideKey !== undefined ? overrideKey : openrouterApiKey).trim();
-    const m = (overrideModel !== undefined ? overrideModel : openrouterModel).trim() || 'deepseek/deepseek-r1:free';
-
-    if (!k) {
-      setKeyTestStatus({
-        success: false,
-        message: 'لطفاً ابتدا کلید API اوپن‌روتر خود را در کادر وارد نمایید.',
-      });
-      return;
-    }
-
+  const handleTestProviders = async () => {
     setTestingOpenRouter(true);
     setKeyTestStatus(null);
-
     try {
-      const resp = await fetch('/api/test-key', {
+      const resp = await fetch(apiUrl('/api/test-providers'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'openrouter',
-          apiKey: k,
-          model: m,
+          groqApiKey: groqApiKey.trim(),
+          geminiApiKey: geminiApiKey.trim(),
+          cloudflareApiToken: cloudflareApiToken.trim(),
+          cloudflareAccountId: cloudflareAccountId.trim(),
+          cloudflareModel: cloudflareModel.trim(),
         }),
       });
-      const data = await resp.json();
-      setKeyTestStatus({
-        success: !!data.valid,
-        message: data.message || (data.valid ? 'کلید با موفقیت متصل شد.' : 'خطا در اعتبارسنجی کلید.'),
-      });
+      const data = await resp.json().catch(() => ({}));
+      const groq = data?.results?.groq;
+      const cloudflare = data?.results?.cloudflare;
+      let geminiMessage = 'کلید وارد نشده است';
+      let geminiOk = false;
+      if (geminiApiKey.trim()) {
+        const geminiResp = await fetch(apiUrl('/api/test-key'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: 'gemini', apiKey: geminiApiKey.trim() }),
+        });
+        const geminiData = await geminiResp.json().catch(() => ({}));
+        geminiOk = !!geminiData?.valid;
+        geminiMessage = geminiData?.message || 'آزمایش Gemini نتیجه‌ای نداد.';
+      }
+      const message = `Groq: ${groq?.message || 'بدون پاسخ'} | Gemini: ${geminiMessage} | Cloudflare: ${cloudflare?.message || 'بدون پاسخ'}`;
+      setKeyTestStatus({ success: !!data?.ok || geminiOk, message });
     } catch (e: any) {
-      setKeyTestStatus({
-        success: false,
-        message: `خطای اتصال به سرور: ${e?.message || 'خطای شبکه'}`,
-      });
+      setKeyTestStatus({ success: false, message: `خطای اتصال به سرور: ${e?.message || 'خطای شبکه'}` });
     } finally {
       setTestingOpenRouter(false);
     }
@@ -863,7 +898,7 @@ ${song.composerNote}
     }));
 
     try {
-      const res = await fetch('/api/rhyme-assistant', {
+      const res = await fetch(apiUrl('/api/rhyme-assistant'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -923,13 +958,14 @@ ${song.composerNote}
     if (!manualEditState) return;
     setManualEditState((prev) => (prev ? { ...prev, isAuditing: true } : null));
     try {
-      const res = await fetch('/api/audit-song', {
+      const res = await fetch(apiUrl('/api/audit-song'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lyrics: manualEditState.lyrics,
           genre: manualEditState.originalSong.genre || '',
           prompt: manualEditState.title,
+          language: manualEditState.originalSong.language || 'فارسی',
         }),
       });
       const data = await res.json();
@@ -995,15 +1031,18 @@ ${song.composerNote}
     );
 
     try {
-      const res = await fetch('/api/edit-song', {
+      const res = await fetch(apiUrl('/api/edit-song'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentSong: aiEditState.song,
           instruction: instructionText,
-          provider: 'openrouter',
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: openrouterModel.trim() || 'deepseek/deepseek-r1:free',
+          provider: 'groq',
+          groqApiKey: groqApiKey.trim(),
+          geminiApiKey: geminiApiKey.trim(),
+          cloudflareApiToken: cloudflareApiToken.trim(),
+          cloudflareAccountId: cloudflareAccountId.trim(),
+          cloudflareModel: cloudflareModel.trim(),
         }),
       });
 
@@ -1099,13 +1138,11 @@ ${song.composerNote}
     }
     setIsLoading(true);
 
-    const primaryModel = openrouterModel.trim() || 'meta-llama/llama-3.3-70b-instruct:free';
-    const fallbackModel = primaryModel === 'meta-llama/llama-3.3-70b-instruct:free'
-      ? 'google/gemma-2-9b-it:free'
-      : 'meta-llama/llama-3.3-70b-instruct:free';
+    const primaryModel = 'Groq → Cloudflare';
+    const fallbackModel = primaryModel;
 
     const sendChatRequest = async (modelToUse: string) => {
-      return await fetch('/api/chat', {
+      return await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1117,9 +1154,12 @@ ${song.composerNote}
           mood: selectedMood,
           languages: langsToSend,
           language: langsToSend.join(' + '),
-          provider: 'openrouter',
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: modelToUse,
+          provider: 'groq',
+          groqApiKey: groqApiKey.trim(),
+          geminiApiKey: geminiApiKey.trim(),
+          cloudflareApiToken: cloudflareApiToken.trim(),
+          cloudflareAccountId: cloudflareAccountId.trim(),
+          cloudflareModel: cloudflareModel.trim(),
           conversationHistory: activeSession.messages.slice(-6).map((m) => ({
             text: m.text || m.songResult?.title || '',
             role: m.sender === 'user' ? 'user' : 'model',
@@ -1138,7 +1178,7 @@ ${song.composerNote}
       data = await response.json().catch(() => ({}));
 
       // Check if primary call failed and automatic retry should trigger
-      if (!response.ok || data.error) {
+      if (false && (!response.ok || data.error)) {
         console.warn(`[Auto-Retry] Primary model ${primaryModel} failed. Automatically retrying once with stable fallback model ${fallbackModel}...`);
         setRetryNotification(`اتصال با مدل اولیه (${primaryModel.split('/').pop()}) ناموفق بود؛ در حال تلاش مجدد خودکار با مدل پایدار جایگزین (${fallbackModel.split('/').pop()})...`);
         isRetried = true;
@@ -1166,7 +1206,7 @@ ${song.composerNote}
           sender: 'bot',
           timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
           error: `خطای شبکه در ارتباط با سرور: ${err2?.message || 'مشکل اتصال اینترنت'}`,
-          failedProvider: 'openrouter',
+          failedProvider: 'Groq / Cloudflare',
         };
 
         setSessions((prev) =>
@@ -1188,8 +1228,8 @@ ${song.composerNote}
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-        error: data?.error || 'خطا در ارتباط با سرویس هوش مصنوعی (حتی پس از تلاش مجدد با مدل پایدار جایگزین).',
-        failedProvider: data?.provider || 'openrouter',
+        error: data?.error || 'خطا در ارتباط با سرویس هوش مصنوعی Groq و Cloudflare.',
+        failedProvider: data?.provider || 'Groq / Cloudflare',
       };
 
       setSessions((prev) =>
@@ -1215,7 +1255,7 @@ ${song.composerNote}
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
         songResult: data.result,
-        source: data.source || `openrouter (${usedModel})`,
+        source: data.source || 'Groq / Cloudflare',
         warning: warningNote,
       };
 
@@ -1243,32 +1283,11 @@ ${song.composerNote}
     handleSendMessage(qp.prompt, qp.languages);
   };
 
-  const getProviderBadge = (providerName: string) => {
-    if (providerName.includes('openrouter')) {
-      const modelPart = providerName.replace('openrouter', '').replace(/[()]/g, '').trim() || openrouterModel;
-      const shortName = modelPart.split('/').pop() || modelPart;
-      const isFree = modelPart.includes(':free');
-      return {
-        label: `OpenRouter (${shortName}${isFree ? ' · رایگان' : ''})`,
-        short: isFree ? `🌐 ${shortName} (رایگان)` : `🌐 ${shortName}`,
-        bg: isFree
-          ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
-          : 'bg-purple-500/15 text-purple-300 border-purple-500/40',
-      };
-    }
-    if (providerName.includes('gemini')) {
-      return {
-        label: 'Google Gemini (پشتیبان ابری)',
-        short: 'جِمِنای',
-        bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-      };
-    }
-    return {
-      label: 'ترانه سرای فرخزاد (موتور اختصاصی)',
-      short: 'استودیو فرخزاد',
-      bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    };
-  };
+  const getProviderBadge = (_providerName: string) => ({
+    label: 'هوش مصنوعی ابری (Groq → Cloudflare)',
+    short: 'Groq / Cloudflare',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+  });
 
   const activeGenreObj = GENRE_OPTIONS.find((g) => g.label === selectedGenre) || GENRE_OPTIONS[0];
 
@@ -1287,9 +1306,7 @@ ${song.composerNote}
           <aside className="relative z-50 w-80 max-w-[85vw] bg-[#0E1017] border-l border-white/10 flex flex-col h-full shadow-2xl transition-transform animate-in slide-in-from-right duration-200">
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
-                  <Music className="w-4 h-4" />
-                </div>
+                <img src={royalPersianEmblem} alt="نشان شیر و خورشید" className="w-10 h-10 rounded-xl object-cover border border-[#D4AF37]/50 shadow-md" />
                 <div>
                   <h2 className="text-sm font-bold text-[#F4EFE6]">
                     ترانه سرای فرخزاد
@@ -1329,7 +1346,7 @@ ${song.composerNote}
               >
                 <div className="flex items-center gap-2">
                   <Key className="w-3.5 h-3.5" />
-                  <span>تنظیم کلید OpenRouter و نام هوش مصنوعی</span>
+                  <span>تنظیم کلیدهای هوش مصنوعی</span>
                 </div>
                 <span className="text-[10px] bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 rounded text-cyan-300 font-mono" dir="ltr">
                   {openrouterModel.split('/').pop()}
@@ -1547,13 +1564,13 @@ ${song.composerNote}
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[#F4EFE6] flex items-center gap-2">
-                    <span>تنظیم کلید و مدل هوش مصنوعی (OpenRouter)</span>
+                    <span>تنظیم اتصال هوش مصنوعی</span>
                     <span className="text-[10px] bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded font-mono">
                       Universal API
                     </span>
                   </h3>
                   <p className="text-xs text-[#A69F91] mt-0.5">
-                    اتصال به صدها مدل هوش مصنوعی قدرتمند جهان با یک کلید واحد و مدل‌های با توکن رایگان
+                    آزمایش مستقیم اتصال Groq و Cloudflare؛ نتیجهٔ واقعی هر سرویس در همین پنجره نمایش داده می‌شود.
                   </p>
                 </div>
               </div>
@@ -1566,242 +1583,50 @@ ${song.composerNote}
               </button>
             </div>
 
-            {/* Quick Explanation & OpenRouter Link Card */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#141726] to-[#121420] border border-[#D4AF37]/30 text-xs text-[#E2DDD3] space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[#D4AF37] font-bold">
-                  <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                  <span>دسترسی آزاد به بهترین هوش مصنوعی‌های جهان:</span>
-                </div>
-                <a
-                  href="https://openrouter.ai/keys"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1"
-                >
-                  <span>دریافت کلید رایگان</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <p className="text-[11px] text-[#A69F91] leading-relaxed">
-                با داشتن یک کلید از <strong>OpenRouter</strong>، نیازی به ثبت نام جداگانه در OpenAI یا Anthropic ندارید. مدل‌های دارای پسوند <code className="text-cyan-300 font-mono">:free</code> توکن کاملاً رایگان دارند و می‌توانید بدون هزینه از آنها برای سرایش شعر و ساخت پرامپت سونو استفاده کنید.
-              </p>
+            {/* API server URL is needed by the standalone Android app. */}
+            <div className="p-3.5 rounded-xl bg-[#141724] border border-cyan-500/20 space-y-2">
+              <label className="text-xs font-bold text-cyan-200">نشانی سرور برنامه (برای نسخه APK)</label>
+              <input type="url" autoComplete="url" placeholder="https://your-service.onrender.com" defaultValue={localStorage.getItem('taraneh_api_base_url') || 'https://taraneh-api.onrender.com'} onChange={(e) => { const value = e.target.value.trim().replace(/\/$/, ''); if (value) localStorage.setItem('taraneh_api_base_url', value); else localStorage.removeItem('taraneh_api_base_url'); }} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-cyan-400 font-mono" dir="ltr" />
+              <p className="text-[10px] leading-relaxed text-[#A69F91]">برای APK باید آدرس HTTPS سرور ثبت شده باشد؛ این آدرس به‌صورت پیش‌فرض تنظیم شده است.</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-[#141724] border border-blue-500/30 space-y-2">
+              <label className="text-xs font-bold text-blue-200">کلید Gemini — برای بازنویسی و اصلاح ترانه</label>
+              <input type="password" autoComplete="off" placeholder="کلید Gemini را وارد کن (AIza...)" value={geminiApiKey} onChange={(e) => setGeminiApiKey(e.target.value)} className="w-full h-10 px-3 rounded-lg bg-[#0A0C13] border border-blue-400/30 text-sm text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-blue-400 font-mono" dir="ltr" />
+              <p className="text-[10px] leading-relaxed text-[#A69F91]">برای دریافت کلید رایگان/آزمایشی از <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-300 underline font-bold">Google AI Studio</a> وارد شو. پس از وارد کردن کلید، پایین همین پنجره «آزمایش اتصال کلیدها» را بزن.</p>
             </div>
 
-            {/* Field 1: OpenRouter API Key Input */}
-            <div className="p-3.5 rounded-xl bg-[#141724] border border-white/10 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-[#F4EFE6] flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span>۱. کادر وارد کردن کلید OpenRouter (با sk-or- شروع می‌شود):</span>
-                </label>
-                {openrouterApiKey ? (
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
-                    <ShieldCheck className="w-3 h-3" /> کلید ذخیره شده
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-amber-400">کلید وارد نشده</span>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="sk-or-v1-..."
-                  value={openrouterApiKey}
-                  onChange={(e) => {
-                    setOpenrouterApiKey(e.target.value);
-                    setKeyTestStatus(null);
-                  }}
-                  className="flex-1 h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-[#D4AF37] font-mono"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleSaveOpenRouterConfig()}
-                  className="h-9 px-3 rounded-lg bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] text-xs font-bold cursor-pointer transition-colors shrink-0 flex items-center gap-1"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>ذخیره کلید</span>
-                </button>
-                {openrouterApiKey && (
-                  <button
-                    type="button"
-                    onClick={handleClearOpenRouterKey}
-                    title="حذف کلید"
-                    className="h-9 px-2.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-xs text-rose-300 font-medium cursor-pointer transition-colors shrink-0"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+            {/* Additional fallback providers: user-owned keys stay in this browser/device storage. */}
+            <div className="p-3.5 rounded-xl bg-[#141724] border border-emerald-500/20 space-y-3">
+              <div className="flex items-center justify-between gap-2"><div className="text-xs font-bold text-emerald-300">اولویت اتصال هوش مصنوعی: Gemini، سپس Cloudflare و Groq</div><span className="text-[10px] text-[#A69F91]">کلیدهای شخصی شما</span></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">کلید API سرویس Groq</label><input type="password" autoComplete="off" placeholder="gsk_..." value={groqApiKey} onChange={(e) => setGroqApiKey(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-emerald-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">دریافت کلید: <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline font-bold">Groq Console</a> · سهمیهٔ رایگان تابع محدودیت‌های سرویس است.</p></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare Account ID</label><input type="text" autoComplete="off" placeholder="شناسه حساب Cloudflare" value={cloudflareAccountId} onChange={(e) => setCloudflareAccountId(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare API Token</label><p className="text-[10px] text-[#8E8779]">دریافت توکن: <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer" className="text-orange-300 underline font-bold">Cloudflare API Tokens</a></p><input type="password" autoComplete="off" placeholder="توکن محرمانه Cloudflare" value={cloudflareApiToken} onChange={(e) => setCloudflareApiToken(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
+              <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">شناسه مدل Cloudflare</label><input type="text" autoComplete="off" placeholder="@cf/meta/llama-3.3-70b-instruct-fp8-fast" value={cloudflareModel} onChange={(e) => setCloudflareModel(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">شناسه مدل را می‌توان تغییر داد؛ مدل‌های Workers AI معمولاً با @cf/ شروع می‌شوند.</p></div>
+              <p className="text-[10px] leading-relaxed text-amber-300/90">توکن را در GitHub یا چت منتشر نکن. در این نسخه، کلیدها در فضای ذخیره‌سازی مرورگر همین دستگاه ذخیره می‌شوند و رمزنگاری‌شده نیستند.</p>
             </div>
 
-            {/* Field 2: AI Model Name Input (همان کادر اسم هوش مصنوعی درخواستی کاربر) */}
-            <div className="p-3.5 rounded-xl bg-[#141724] border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-[#F4EFE6] flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>۲. کادر نوشتن نام مدل هوش مصنوعی (Model Name):</span>
-                </label>
-                <span className="text-[10px] text-[#A69F91]">
-                  مدل فعال:{' '}
-                  <span className="font-mono text-cyan-300 font-bold" dir="ltr">
-                    {openrouterModel.split('/').pop()}
-                  </span>
-                </span>
+            {keyTestStatus && (
+              <div className={`rounded-lg border p-3 text-xs leading-6 whitespace-pre-wrap ${keyTestStatus.success ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : 'border-red-500/40 bg-red-500/10 text-red-200'}`}>
+                {keyTestStatus.message}
               </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="مثال: meta-llama/llama-3.3-70b-instruct:free یا deepseek/deepseek-r1:free"
-                  value={openrouterModel}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setOpenrouterModel(val);
-                    localStorage.setItem(OPENROUTER_MODEL_STORAGE, val);
-                    setKeyTestStatus(null);
-                  }}
-                  className="flex-1 h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-cyan-400 font-mono"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  disabled={testingOpenRouter}
-                  onClick={() => handleTestOpenRouterKey()}
-                  className="h-9 px-3 rounded-lg bg-cyan-900/50 hover:bg-cyan-900 border border-cyan-500/40 text-xs text-cyan-200 font-semibold cursor-pointer transition-colors shrink-0 flex items-center gap-1.5"
-                >
-                  {testingOpenRouter ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>تست اتصال...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>تست اتصال کلید</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Status and notification alerts */}
-              {keySaveMessage && (
-                <div className="text-[11px] p-2 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>{keySaveMessage}</span>
-                </div>
-              )}
-
-              {keyTestStatus && (
-                <div
-                  className={`text-[11px] p-2.5 rounded-lg flex items-center gap-2 ${
-                    keyTestStatus.success
-                      ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-rose-950/40 text-rose-300 border border-rose-500/30'
-                  }`}
-                >
-                  {keyTestStatus.success ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                  ) : (
-                    <XCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                  )}
-                  <span className="leading-relaxed">{keyTestStatus.message}</span>
-                </div>
-              )}
-
-              {/* Quick Pick: Free Models */}
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-cyan-300 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    انتخاب سریع مدل‌های با توکن رایگان (کلیک کنید):
-                  </span>
-                  <span className="text-[10px] text-[#8E8779]">بدون نیاز به شارژ مالی</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {OPENROUTER_FREE_MODELS.map((model) => {
-                    const isSelected = openrouterModel === model.id;
-                    return (
-                      <button
-                        key={model.id}
-                        type="button"
-                        onClick={() => {
-                          setOpenrouterModel(model.id);
-                          handleSaveOpenRouterConfig(undefined, model.id);
-                        }}
-                        className={`p-2 rounded-lg border text-right transition-all cursor-pointer flex flex-col gap-0.5 ${
-                          isSelected
-                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm ring-1 ring-cyan-400/40'
-                            : 'bg-[#0E1018] border-white/10 hover:border-cyan-500/40 text-[#A69F91] hover:text-[#F4EFE6]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xs font-bold text-white">{model.name}</span>
-                          <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-500/30 font-semibold">
-                            رایگان
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-[#8E8779] line-clamp-1">{model.desc}</span>
-                        <span className="text-[9px] text-[#696357] font-mono mt-0.5" dir="ltr">
-                          {model.id}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Pick: Top Literary Models */}
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-purple-300 flex items-center gap-1">
-                    <Award className="w-3 h-3" />
-                    مدل‌های تخصصی شعر و ادبیات فارسی (در صورت داشتن موجودی):
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                  {OPENROUTER_POPULAR_MODELS.map((model) => {
-                    const isSelected = openrouterModel === model.id;
-                    return (
-                      <button
-                        key={model.id}
-                        type="button"
-                        onClick={() => {
-                          setOpenrouterModel(model.id);
-                          handleSaveOpenRouterConfig(undefined, model.id);
-                        }}
-                        className={`p-2 rounded-lg border text-right transition-all cursor-pointer flex flex-col gap-0.5 ${
-                          isSelected
-                            ? 'bg-purple-950/50 border-purple-400 text-white shadow-sm ring-1 ring-purple-400/40'
-                            : 'bg-[#0E1018] border-white/10 hover:border-purple-500/40 text-[#A69F91] hover:text-[#F4EFE6]'
-                        }`}
-                      >
-                        <span className="text-xs font-bold text-white">{model.name}</span>
-                        <span className="text-[10px] text-[#8E8779] line-clamp-1">{model.desc}</span>
-                        <span className="text-[9px] text-[#696357] font-mono mt-0.5" dir="ltr">
-                          {model.id.split('/').pop()}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
+            )}
             {/* Modal Footer */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-3 flex-wrap">
               <span className="text-[11px] text-[#8E8779]">
-                کلید در مرورگر شما محلی ذخیره می‌شود و مستقیماً به OpenRouter ارسال می‌گردد.
+                کلیدها برای اتصال به Gemini، Groq و Cloudflare استفاده می‌شوند.
               </span>
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(false)}
-                className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs cursor-pointer shadow-md transition-colors"
-              >
-                تأیید و بازگشت به استودیو
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" disabled={testingOpenRouter} onClick={handleTestProviders} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs">
+                  {testingOpenRouter ? 'در حال آزمایش...' : 'آزمایش اتصال کلیدها'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowKeyModal(false)}
+                  className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs cursor-pointer shadow-md transition-colors"
+                >
+                  تأیید و بازگشت
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2511,7 +2336,9 @@ ${song.composerNote}
               <Menu className="w-5 h-5" />
             </button>
 
-            <div>
+            <div className="flex items-center gap-3 min-w-0">
+              <img src={royalPersianEmblem} alt="نشان شیر و خورشید" className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-[#D4AF37]/50 shadow-md shrink-0" />
+              <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-base font-bold text-[#F4EFE6] tracking-tight">
                   ترانه سرای فرخزاد
@@ -2525,6 +2352,7 @@ ${song.composerNote}
               </p>
             </div>
           </div>
+          </div>
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-2">
@@ -2535,7 +2363,7 @@ ${song.composerNote}
               className={`px-2.5 py-1 sm:py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 getProviderBadge(openrouterModel).bg
               }`}
-              title="تنظیم کلید OpenRouter و تغییر مدل هوش مصنوعی"
+              title="تنظیم کلیدهای هوش مصنوعی"
             >
               <Cpu className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">{getProviderBadge(openrouterModel).label}</span>

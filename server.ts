@@ -1465,6 +1465,22 @@ A timeless hymn of liberty beneath the starry skies!`);
   };
 }
 
+function extractModelText(value: any): string {
+  if (typeof value === 'string') return value.trim();
+  if (Array.isArray(value)) return value.map((part: any) => typeof part === 'string' ? part : (typeof part?.text === 'string' ? part.text : '')).filter(Boolean).join('\n').trim();
+  if (value && typeof value === 'object') { if (typeof value.text === 'string') return value.text.trim(); if (typeof value.content === 'string') return value.content.trim(); }
+  return '';
+}
+
+function parseModelJson(raw: string): any {
+  const cleaned = String(raw || '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^\s*\x60\x60\x60(?:json)?\s*/i, '').replace(/\s*\x60\x60\x60\s*$/i, '').trim();
+  try { return JSON.parse(cleaned); } catch {}
+  const start = cleaned.indexOf('{'); if (start < 0) return null;
+  let depth = 0, inString = false, escaped = false;
+  for (let i = start; i < cleaned.length; i++) { const ch = cleaned[i]; if (inString) { if (escaped) escaped = false; else if (ch === '\\') escaped = true; else if (ch === '"') inString = false; continue; } if (ch === '"') inString = true; else if (ch === '{') depth++; else if (ch === '}' && --depth === 0) { try { return JSON.parse(cleaned.slice(start, i + 1)); } catch { return null; } } }
+  return null;
+}
+
 interface AIProviderResponse {
   success: boolean;
   result?: SongGenerationResult;
@@ -1475,17 +1491,101 @@ interface AIProviderResponse {
 
 // Multi-provider caller supporting OpenRouter (unified API for hundreds of AI models & free tokens), Gemini, OpenAI, Claude, and Studio Engine
 async function callSelectedAIProvider(params: {
-  provider: 'openrouter' | 'gemini' | 'openai' | 'claude' | 'studio';
+  provider: 'openrouter' | 'gemini' | 'openai' | 'claude' | 'studio' | 'groq' | 'cloudflare';
   userApiKey?: string;
   openrouterApiKey?: string;
   openrouterModel?: string;
+  groqApiKey?: string;
+  cloudflareApiToken?: string;
+  cloudflareAccountId?: string;
+  cloudflareModel?: string;
   systemPrompt: string;
   userMessage: string;
 }): Promise<AIProviderResponse> {
-  const { provider, userApiKey, openrouterApiKey, openrouterModel, systemPrompt, userMessage } = params;
+  const { provider, userApiKey, openrouterApiKey, openrouterModel, groqApiKey, cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage } = params;
 
   if (provider === 'studio') {
     return { success: false, source: 'studio' };
+  }
+
+  // Keep prompts compact for free-tier providers: the full editorial prompt was
+  // consuming most of the TPM budget before the model could write any lyrics.
+  const compactSongSystemPrompt = `You are an expert Persian lyricist, rap writer, and Suno v4 producer. Quality matters more than speed.
+OUTPUT: Return exactly one valid JSON object only (no markdown fences or commentary) with these string fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles.
+LYRICS QUALITY RULES:
+- Write a real SONG, not prose, slogans, a summary, or repeated generic statements. Create a clear beginning, development, turning point, and memorable ending.
+- Follow the user's exact theme, chosen genre, song structure, mood, vocalist and requested language. Do not invent a different theme or blindly praise a person/event not requested.
+- Write 24-34 meaningful lyric lines across 6-8 suitable sections. Use clear Suno section tags in English square brackets, for example [Intro: Dark Synth, Spoken Vocal], [Verse 1: Aggressive Raspy Rap], [Pre-Chorus: Rising Tension], [Chorus: Explosive Hook, Gang Vocals], [Verse 2: Double-Time Flow], [Bridge: Beat Drops, Spoken Vocal], [Final Chorus: Full Beat], [Outro: Beat Fades]. Adapt tags to the actual genre; do not copy these examples mechanically.
+- Every section must have a different job and move the story forward. The chorus must have a short, memorable, singable hook; verses need concrete details, fresh imagery, internal rhyme and natural cadence. Avoid filler, clichés, repeated lines, and rephrasing the same idea.
+- In Persian songs, ALL sung/spoken lyric lines must be natural, idiomatic Persian. Do not insert stray English, French, Turkish or other foreign words. Exceptions: English section tags in square brackets and proper names that genuinely belong in the theme. Never use a foreign word to patch a line.
+- Plan a clear stanza-level rhyme scheme (such as AABB or ABAB where appropriate). Pair lines within each stanza; do not let unrelated lines accidentally define the scheme. Genuine rhyme must sound natural when spoken aloud, not merely share a few written letters.
+- Never print rhyme-analysis markers such as (A), (B), AABB, or rhyme labels inside the actual lyrics. Those are planning notes, not sung words.
+- Each couplet must make sense as a unit and connect logically or emotionally to the lines around it. Use natural Persian grammar; rewrite the whole couplet if a rhyme feels forced.
+- Before returning, read each couplet as ordinary Persian prose: if the image, grammar, or cause-and-effect is unclear, replace it rather than preserving a rhyme.
+- Do not claim a specific classical Persian meter unless it is genuinely maintained; otherwise keep the cadence singable to the chosen beat.
+- Remove filler lines, repeated ideas, and any word used only to force a rhyme.
+SUNO METADATA:
+- musicPrompt must be a specific, polished English production prompt, preserving and developing the user's supplied music prompt/style details when present (subgenre, tempo, acoustic space, saturation, instruments, vocal texture, arrangement and dynamics). Do not replace supplied details with unrelated instruments/styles.
+- tempoAndKey, instrumentation and excludeStyles must be concise, useful English. composerNote must be Persian and specific to the actual lyrics.
+- Make every metadata field consistent with the actual song and selected style.
+Before returning, silently check: all required fields exist; lyrics contain labeled sections and 24-34 actual lyric lines; language is consistent; no stray foreign words; the story progresses; the chorus is memorable; the music prompt follows the user's supplied style. If any check fails, revise the output before returning JSON.`;
+  const compactUserMessage = String(userMessage || '').slice(0, 9000);
+
+  // Groq fallback: OpenAI-compatible chat completions API.
+  if (provider === 'groq') {
+    const key = (groqApiKey || '').trim();
+    if (!key) return { success: false, error: 'کلید Groq وارد نشده است.', source: 'groq' };
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model: 'openai/gpt-oss-120b', messages: [
+          { role: 'system', content: compactSongSystemPrompt },
+          { role: 'user', content: compactUserMessage },
+        ], response_format: { type: 'json_object' }, temperature: 0.45, max_completion_tokens: 4096, reasoning_effort: 'low' }), signal: AbortSignal.timeout(45000),
+      });
+      const json: any = await response.json().catch(() => ({}));
+      if (!response.ok) return { success: false, error: `خطای Groq (${response.status}): ${json?.error?.message || response.statusText}`, source: 'groq' };
+      const content = extractModelText(json?.choices?.[0]?.message?.content ?? json?.choices?.[0]?.message?.output_text);
+      const parsed = parseModelJson(content);
+      if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: 'groq (openai/gpt-oss-120b)' };
+      return { success: false, error: 'Groq پاسخ داد، اما خروجی ترانه JSON معتبر نبود.', source: 'groq' };
+    } catch (e: any) { return { success: false, error: `اتصال به Groq ناموفق بود: ${e?.message || 'خطای شبکه'}`, source: 'groq' }; }
+  }
+
+  // Cloudflare Workers AI fallback. Account ID and token come from the user.
+  if (provider === 'cloudflare') {
+    const token = (cloudflareApiToken || '').trim();
+    const account = (cloudflareAccountId || '').trim();
+    const model = (cloudflareModel || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
+    if (!token || !account) return { success: false, error: 'برای Cloudflare باید Account ID و API Token وارد شوند.', source: 'cloudflare' };
+    try {
+      const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/ai/v1/chat/completions`;
+      const messages = [
+        { role: 'system', content: compactSongSystemPrompt },
+        { role: 'user', content: compactUserMessage },
+      ];
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ model, messages, max_tokens: 4096, temperature: 0.65 }),
+        signal: AbortSignal.timeout(28000),
+      });
+      const json: any = await response.json().catch(() => ({}));
+      if (!response.ok || json?.success === false) {
+        const detail = json?.errors?.map((x: any) => x.message).filter(Boolean).join('; ') || json?.error?.message || response.statusText;
+        const authHint = response.status === 401 || response.status === 403
+          ? ' برای رفع آن، از داشبورد Cloudflare بخش Workers AI > Use REST API یک توکن مخصوص Workers AI بسازید یا توکن فعلی را با دسترسی‌های Workers AI - Read و Workers AI - Edit بررسی کنید؛ Account ID نیز باید متعلق به همان حساب باشد.'
+          : '';
+        return { success: false, error: `خطای Cloudflare (${response.status}): ${detail}.${authHint}`, source: 'cloudflare' };
+      }
+      const content = extractModelText(json?.result?.choices?.[0]?.message?.content ?? json?.choices?.[0]?.message?.content ?? json?.result?.response ?? json?.response);
+      const parsed = parseModelJson(content);
+      if (parsed?.title && parsed?.lyrics) return { success: true, result: parsed, source: `cloudflare (${model})` };
+      const finishReason = json?.result?.choices?.[0]?.finish_reason || json?.choices?.[0]?.finish_reason || null;
+      console.warn('[Cloudflare generation unusable]', { model, hasContent: Boolean(content), finishReason, responseKeys: Object.keys(json || {}) });
+      const detail = !content ? (finishReason === 'length' ? 'پاسخ پیش از تولید متن نهایی قطع شد (محدودیت طول خروجی).' : 'مدل متن نهایی برنگرداند.') : 'متن برگشت، اما JSON ترانه قابل‌خواندن نبود.';
+      return { success: false, error: `Cloudflare: ${detail} (مدل: ${model}${finishReason ? `, پایان: ${finishReason}` : ''}).`, source: 'cloudflare' };
+    } catch (e: any) { return { success: false, error: `اتصال به Cloudflare ناموفق بود: ${e?.name === 'TimeoutError' || e?.name === 'AbortError' ? 'پاسخ مدل در ۲۸ ثانیه آماده نشد؛ تلاش با مدل جایگزین ادامه می‌یابد.' : (e?.message || 'خطای شبکه')}`, source: 'cloudflare' }; }
   }
 
   // 1. OpenRouter (Universal AI Gateway supporting all models & free tier tokens)
@@ -1505,6 +1605,14 @@ async function callSelectedAIProvider(params: {
             warning: 'کلید اوپن‌روتر هنوز وارد نشده است؛ سرایش با کلید ابری پشتیبان انجام شد. برای استفاده از مدل‌های اختصاصی اوپن‌روتر، کلید خود را در منوی تنظیمات ذخیره نمایید.',
           };
         }
+      }
+      if (groqApiKey) {
+        const groqFallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt, userMessage });
+        if (groqFallback.success) return { ...groqFallback, warning: 'سرویس اصلی در دسترس نبود؛ سرایش به‌صورت خودکار به Groq منتقل شد.' };
+      }
+      if (cloudflareApiToken && cloudflareAccountId) {
+        const cloudFallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage });
+        if (cloudFallback.success) return { ...cloudFallback, warning: 'سرویس اصلی و Groq در دسترس نبودند؛ سرایش به‌صورت خودکار به Cloudflare منتقل شد.' };
       }
       return {
         success: false,
@@ -1612,6 +1720,15 @@ async function callSelectedAIProvider(params: {
           warning: `مدل‌های اوپن‌روتر موقتاً با ترافیک بالا مواجه شدند (${lastOpenRouterError})؛ ترانه با هوش مصنوعی پشتیبان جِمِنای خلق شد.`,
         };
       }
+    }
+
+    if (groqApiKey) {
+      const groqFallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey, systemPrompt, userMessage });
+      if (groqFallback.success) return { ...groqFallback, warning: 'OpenRouter و Gemini پاسخگو نبودند؛ سرایش به‌صورت خودکار به Groq منتقل شد.' };
+    }
+    if (cloudflareApiToken && cloudflareAccountId) {
+      const cloudFallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken, cloudflareAccountId, cloudflareModel, systemPrompt, userMessage });
+      if (cloudFallback.success) return { ...cloudFallback, warning: 'OpenRouter، Gemini و Groq پاسخگو نبودند؛ سرایش به‌صورت خودکار به Cloudflare منتقل شد.' };
     }
 
     return {
@@ -1890,32 +2007,43 @@ async function callSelectedAIProvider(params: {
 
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
-export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: string): SongQualityAudit {
-  const lines = lyrics
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.startsWith('('));
+export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: string, languageContext = 'فارسی'): SongQualityAudit {
+  const lyricLines = lyrics.split('\n').map((l) => l.trim()).filter(Boolean);
+  const lines = lyricLines.filter((l) => !l.startsWith('[') && !l.startsWith('('));
+  const sectionTags = lyricLines.filter((l) => /^\[[^\]]+\]$/.test(l));
+  const normalizedLines = lines.map((l) => l.toLowerCase().replace(/[\u0640\u064B-\u065F،؛:!؟?.«»"'()\[\]]/g, '').replace(/\s+/g, ' ').trim());
+  const lineFrequency = new Map<string, number>();
+  normalizedLines.filter(Boolean).forEach((line) => lineFrequency.set(line, (lineFrequency.get(line) || 0) + 1));
+  // Repeated choruses are normal; flag only lines repeated more than three times.
+  const duplicateLineCount = Array.from(lineFrequency.values()).reduce((count, frequency) => count + Math.max(0, frequency - 3), 0);
+  const repeatedLineRatio = normalizedLines.length ? duplicateLineCount / normalizedLines.length : 1;
+  const normalizedLanguageContext = String(languageContext || '').toLocaleLowerCase();
+  const requestedLanguageParts = normalizedLanguageContext.split(/[+,،/|]/).map((part) => part.trim()).filter(Boolean);
+  const isPersianOnlyRequest = requestedLanguageParts.length === 1 &&
+    /^(فارسی|persian|farsi)$/.test(requestedLanguageParts[0]);
 
-  // 1. Strict Minimum Length & Architecture Gate (جلوگیری از ترانه‌های کوتاه و ناقص)
-  if (lines.length < 18) {
+  // Tags do not count as sung lines. Enforce a complete, non-truncated song.
+  if (lines.length < 24) {
     return {
-      rhymeScore: 56,
-      meterScore: 60,
-      narrativeScore: 48,
-      overallScore: 54,
+      rhymeScore: 42,
+      meterScore: 55,
+      narrativeScore: 40,
+      overallScore: 45,
       verdict: 'نیاز به بهینه‌سازی',
       passed: false,
-      notes: `ترانه کوتاه و ناکامل است (${lines.length} سطر). یک اثر فاخر و حرفه‌ای ترانه‌سرایی باید دارای روایت کامل و چندپرده‌ای (شامل ورس ۱، کورس، ورس ۲، بریج و اوترو با حداقل ۲۰ الی ۳۲ مصراع) باشد تا داستان اصلی مضمون به کمال برسد.`,
+      notes: `ترانه فقط ${lines.length} سطر اجرایی دارد؛ حداقل ۲۴ سطر لازم است. ساختار را با معنای تازه گسترش بده؛ تکرار برای پُر کردن حجم پذیرفته نیست.`,
     };
   }
 
   // 2. Structural Narrative Arc Inspection (بررسی ساختار دراماتیک و روایی ترانه متناسب با انواع ساختارها)
   const hasIntro = lyrics.includes('[Intro') || lyrics.includes('[Prologue') || lyrics.includes('[Scene 1') || lyrics.includes('[Pishdaramad');
-  const hasPart1 = lyrics.includes('[Verse 1') || lyrics.includes('[Verse') || lyrics.includes('[Act 1') || lyrics.includes('[Bars 1') || lyrics.includes('[Stanza 1') || lyrics.includes('[Band 1');
-  const hasChorus = lyrics.includes('[Chorus') || lyrics.includes('[Hook') || lyrics.includes('[Refrain') || lyrics.includes('[Tarjea') || lyrics.includes('[Tasnif');
-  const hasPart2 = lyrics.includes('[Verse 2') || lyrics.includes('[Act 2') || lyrics.includes('[Scene 2') || lyrics.includes('[Bars 17') || lyrics.includes('[Stanza 2') || lyrics.includes('[Band 2') || lyrics.includes('[Bars 9-16');
-  const hasBridgeOrClimax = lyrics.includes('[Bridge') || lyrics.includes('[Act 3') || lyrics.includes('[Guitar Solo') || lyrics.includes('[Drop') || lyrics.includes('[Climax');
-  const hasOutro = lyrics.includes('[Outro') || lyrics.includes('[Epilogue') || lyrics.includes('[Act 4') || lyrics.includes('[Forood');
+  const hasPart1 = lyrics.includes('[Verse 1') || lyrics.includes('[Verse') || lyrics.includes('[Act 1') || lyrics.includes('[Bars 1') || lyrics.includes('[Stanza 1') || lyrics.includes('[Band 1') || lyrics.includes('[Movement 1') || lyrics.includes('[Daramad');
+  const hasChorus = lyrics.includes('[Chorus') || lyrics.includes('[Hook') || lyrics.includes('[Refrain') || lyrics.includes('[Tarjea') || lyrics.includes('[Tasnif') || lyrics.includes('[Melodic Theme');
+  const hasPart2 = lyrics.includes('[Verse 2') || lyrics.includes('[Act 2') || lyrics.includes('[Scene 2') || lyrics.includes('[Bars 17') || lyrics.includes('[Stanza 2') || lyrics.includes('[Band 2') || lyrics.includes('[Bars 9-16') || lyrics.includes('[Movement 2');
+  const hasBridgeOrClimax = lyrics.includes('[Bridge') || lyrics.includes('[Act 3') || lyrics.includes('[Guitar Solo') || lyrics.includes('[Drop') || lyrics.includes('[Climax') || lyrics.includes('[Crescendo') || lyrics.includes('[Breakdown') || lyrics.includes('[Percussion Solo') || lyrics.includes('[Stanza 3') || lyrics.includes('[Stanza 4') || lyrics.includes('[Final Chorus');
+  const hasOutro = lyrics.includes('[Outro') || lyrics.includes('[Epilogue') || lyrics.includes('[Act 4') || lyrics.includes('[Forood') || lyrics.includes('[Resolution');
+  const hasAtLeastFiveTags = sectionTags.length >= 5;
+  const hasRequiredSunoArc = hasPart1 && hasChorus && hasPart2 && hasBridgeOrClimax && hasOutro;
 
   let structureScore = 50;
   if (hasPart1 && hasChorus) structureScore += 20;
@@ -1923,85 +2051,94 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   if (hasBridgeOrClimax) structureScore += 10;
   if (hasOutro) structureScore += 5;
 
-  // 3. Analyze Rhymes & Endings (بررسی دقیق علم قافیه، جلوگیری از قافیه‌های تصنعی و تکرارهای غیرمجاز)
-  const cleanEndings = lines.map((l) => {
-    const stripped = l.replace(/[،.؛:!؟?«»"']+/g, '').trim();
-    const parts = stripped.split(/\s+/);
-    return parts[parts.length - 1] || '';
-  });
+  // 3. Language-aware rhyme estimate. The suffix heuristic is only a rough Persian signal;
+  // it must never grade other languages or mixed-language lyrics as if they were Persian.
+  const rhymeGroups: string[][] = [];
+  let currentRhymeGroup: string[] = [];
+  for (const rawLine of lyricLines) {
+    if (/^\[[^\]]+\]$/.test(rawLine)) {
+      if (currentRhymeGroup.length) rhymeGroups.push(currentRhymeGroup);
+      currentRhymeGroup = [];
+      continue;
+    }
+    if (rawLine.startsWith('(') || !rawLine.trim()) continue;
+    const cleaned = rawLine
+      .replace(/[،؛:!؟?.«»"'()\[\]]/g, '')
+      .replace(/[\u064B-\u065F\u0640]/g, '')
+      .replace(/ي/g, 'ی').replace(/ك/g, 'ک')
+      .replace(/[\u200c\s]+/g, ' ')
+      .trim();
+    const words = cleaned.split(/\s+/);
+    const ending = (words[words.length - 1] || '').replace(/[^\u0600-\u06FF]/g, '');
+    if (ending) currentRhymeGroup.push(ending);
+  }
+  if (currentRhymeGroup.length) rhymeGroups.push(currentRhymeGroup);
 
   let rhymePairs = 0;
   let totalEvaluations = 0;
-  const rhymeWordFrequency: { [word: string]: number } = {};
-
-  for (const endWord of cleanEndings) {
-    if (endWord.length >= 2) {
-      rhymeWordFrequency[endWord] = (rhymeWordFrequency[endWord] || 0) + 1;
-    }
-  }
-
-  // Penalize lazy identical rhyme repetition (عیب شایع تکرار مکرر قافیه و کلمات وصله‌پینه‌ای)
-  const excessiveRepetitions = Object.values(rhymeWordFrequency).filter((count) => count > 3).length;
-
-  for (let i = 0; i < cleanEndings.length - 1; i++) {
-    const w1 = cleanEndings[i];
-    const w2 = cleanEndings[i + 1];
-    if (w1.length >= 2 && w2.length >= 2) {
+  const rhymeWordFrequency: Record<string, number> = {};
+  for (const group of rhymeGroups) {
+    for (const word of group) rhymeWordFrequency[word] = (rhymeWordFrequency[word] || 0) + 1;
+    // Score adjacent couplets within each section, never across unrelated section boundaries.
+    for (let i = 0; i + 1 < group.length; i += 2) {
+      const w1 = group[i];
+      const w2 = group[i + 1];
+      if (w1.length < 3 || w2.length < 3) continue;
       totalEvaluations++;
-      // Check last 2 or 3 letters matching
-      const end2Match = w1.slice(-2) === w2.slice(-2);
-      const end3Match = w1.length >= 3 && w2.length >= 3 && w1.slice(-3) === w2.slice(-3);
-      if (end3Match) {
-        rhymePairs += 1.35;
-      } else if (end2Match) {
-        rhymePairs += 1.0;
-      }
+      if (w1 === w2) continue; // identical end words are repetition, not rhyme
+      const last3Match = w1.slice(-3) === w2.slice(-3);
+      const last2Match = w1.slice(-2) === w2.slice(-2);
+      if (last3Match) rhymePairs += 1;
+      else if (last2Match) rhymePairs += 0.7;
     }
   }
+  const excessiveRepetitions = Object.values(rhymeWordFrequency).filter((count) => count > 3).length;
+  const rawRhymeRatio = totalEvaluations > 0 ? rhymePairs / totalEvaluations : 0;
+  // Do not award a high baseline to a song with no assessable couplet rhymes.
+  let rhymeScore = isPersianOnlyRequest
+    ? (totalEvaluations > 0 ? Math.round(38 + rawRhymeRatio * 62) : 45)
+    : 72; // Neutral advisory score; no false Persian-rhyme judgment for other languages.
+  if (isPersianOnlyRequest && excessiveRepetitions > 0) rhymeScore = Math.max(35, rhymeScore - excessiveRepetitions * 7);
 
-  // Also check alternating rhyme pairs (ABAB / ترانه چهارپاره یا ورس‌های موازی)
-  for (let i = 0; i < cleanEndings.length - 2; i++) {
-    const w1 = cleanEndings[i];
-    const w3 = cleanEndings[i + 2];
-    if (w1.length >= 2 && w3.length >= 2) {
-      totalEvaluations += 0.5;
-      if (w1.slice(-2) === w3.slice(-2)) {
-        rhymePairs += 0.9;
-      }
+  // 4. Rough cadence proxy, evaluated within sections so a spoken intro does not distort a sung chorus.
+  // Word-count consistency is only a weak proxy for singability; it cannot certify aruz meter.
+  const cadenceGroups: number[][] = [];
+  let currentCadenceGroup: number[] = [];
+  for (const rawLine of lyricLines) {
+    if (/^\[[^\]]+\]$/.test(rawLine)) {
+      if (currentCadenceGroup.length) cadenceGroups.push(currentCadenceGroup);
+      currentCadenceGroup = [];
+      continue;
     }
+    if (rawLine.startsWith('(') || !rawLine.trim()) continue;
+    currentCadenceGroup.push(rawLine.trim().split(/\s+/).length);
   }
-
-  const rawRhymeRatio = totalEvaluations > 0 ? rhymePairs / totalEvaluations : 0.65;
-  let rhymeScore = Math.min(100, Math.max(62, Math.round(rawRhymeRatio * 82 + 38)));
-  if (excessiveRepetitions > 1) {
-    rhymeScore = Math.max(52, rhymeScore - excessiveRepetitions * 6);
-  }
-
-  // 4. Metric & Syllable Cadence Consistency (توازن اوزان عروضی/هجایی و ضرب‌آهنگ موسیقایی)
-  const wordLengths = lines.map((l) => l.split(/\s+/).length);
-  const avgLen = wordLengths.reduce((a, b) => a + b, 0) / wordLengths.length;
-  const variance = wordLengths.reduce((acc, len) => acc + Math.pow(len - avgLen, 2), 0) / wordLengths.length;
-  const isSteadyRhythm = variance < 7.5;
-  const meterScore = isSteadyRhythm
-    ? Math.min(99, Math.round(89 + Math.random() * 8))
-    : Math.round(76 + Math.random() * 8);
+  if (currentCadenceGroup.length) cadenceGroups.push(currentCadenceGroup);
+  const cadenceVariances = cadenceGroups.filter((g) => g.length >= 2).map((g) => {
+    const mean = g.reduce((a, b) => a + b, 0) / g.length;
+    return g.reduce((acc, n) => acc + Math.pow(n - mean, 2), 0) / g.length;
+  });
+  const variance = cadenceVariances.length
+    ? cadenceVariances.reduce((a, b) => a + b, 0) / cadenceVariances.length
+    : 10;
+  const meterScore = isPersianOnlyRequest
+    ? Math.max(38, Math.min(82, Math.round(82 - variance * 4)))
+    : 65; // Word-count variance is not a valid prosody test across unrelated languages.
 
   // 5. Deep Storytelling Coherence & Semantic Narrative Arc (پیوند ارگانیک داستان، پیوستگی معنایی و قصه اصلی)
-  const pWords = prompt
-    .replace(/[،.؛:!؟?]+/g, ' ')
-    .split(/\s+/)
-    .filter((w) => w.length > 2);
-  const mentionsThemeCount = pWords.filter((w) => lyrics.includes(w)).length;
-  const narrativeDepthRatio = pWords.length > 0 ? Math.min(1, mentionsThemeCount / Math.max(1, pWords.length * 0.35)) : 0.85;
-
-  let narrativeScore = Math.round(structureScore * 0.45 + narrativeDepthRatio * 40 + 15);
-  if (lines.length >= 24) narrativeScore += 6;
-  if (!hasPart2) narrativeScore = Math.min(72, narrativeScore - 14); // Must have Part 2 to be a full developed story
-  narrativeScore = Math.min(99, Math.max(60, narrativeScore));
+  // Deterministic checks cannot truly understand semantic fidelity. Score visible story
+  // structure only; the generation instructions handle meaning, and the user has final edit.
+  let narrativeScore = Math.round(structureScore * 0.65 + 35);
+  if (lines.length >= 24) narrativeScore += 4;
+  if (!hasPart2) narrativeScore = Math.min(72, narrativeScore - 14);
+  narrativeScore = Math.min(95, Math.max(60, narrativeScore));
 
   // Overall Score & Strict Quality Threshold
+  // Never reject valid bilingual writing, proper names, or another script by appearance alone.
+  const hasExcessiveLineDuplication = repeatedLineRatio > 0.08 || duplicateLineCount >= 2;
   const overallScore = Math.round(rhymeScore * 0.35 + meterScore * 0.3 + narrativeScore * 0.35);
-  const passed = overallScore >= 77 && rhymeScore >= 72 && lines.length >= 18 && hasPart2;
+  const passed = overallScore >= 72 && rhymeScore >= 68 && meterScore >= 58 && narrativeScore >= 65 && lines.length >= 24 &&
+    hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication;
 
   let verdict: 'عالی و تأییدشده' | 'خوب' | 'نیاز به بهینه‌سازی' = 'عالی و تأییدشده';
   if (overallScore < 76 || !passed) {
@@ -2013,11 +2150,17 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const cleanGenre = genre ? genre.split('(')[0].trim() : 'موسیقی';
   let notes = '';
   if (passed) {
-    notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه با ساختار دراماتیک و غنی (${lines.length} سطر)، قافیه‌های طبیعی و هدفمند بدون کلمات زوری و پیوند استوار روایی در سبک «${cleanGenre}» تایید گردید.`;
-  } else if (lines.length < 18 || !hasPart2) {
-    notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه نیازمند بسط داستانی بیشتر است (${lines.length} سطر). برای روایت کامل قصه و جلوگیری از کوتاهی، بسط پرده دوم ماجرا و نقطه اوج اثر الزامی است.`;
+    notes = isPersianOnlyRequest
+      ? `ساختار ترانه از بررسی خودکار عبور کرد (${lines.length} سطر). قافیه و خوش‌خوانی فقط تقریبی سنجیده شده‌اند و تأیید قطعی ادبی نیستند؛ بازبینی نهایی با مخاطب است.`
+      : `ساختار ترانه از بررسی خودکار عبور کرد (${lines.length} سطر). قافیه و وزن تخصصی زبان «${languageContext}» به‌طور خودکار تأیید نشده‌اند؛ بازبینی نهایی با مخاطب است.`;
+  } else if (lines.length < 24 || !hasRequiredSunoArc || !hasAtLeastFiveTags) {
+    notes = `ساختار کامل نیست: ${lines.length} سطر و ${sectionTags.length} برچسب بخش؛ ساختار انتخابی را کامل کن.`;
+  } else if (hasExcessiveLineDuplication) {
+    notes = 'چند سطر تکراری یا تقریباً تکراری دیده می‌شود؛ آن‌ها را با تصویرها و اطلاعات تازه جایگزین کن.';
   } else {
-    notes = `مکتب ادبی ترانه‌سرای فرخزاد: قافیه‌بندی یا پیوند مفهومی ابیات نیازمند صیقل بیشتر با خط داستانی موضوع است تا از کلمات زوری پرهیز شود.`;
+    notes = isPersianOnlyRequest
+      ? `ساختار، قافیه و خوش‌خوانی به‌صورت تقریبی بررسی شد؛ این نمره تضمین عروض یا کیفیت ادبی نیست. ژانر: «${cleanGenre}».`
+      : `ساختار و تکرار متن بررسی شد؛ قافیه و وزن زبان «${languageContext}» با قواعد فارسی نمره‌گذاری نشده‌اند. بازبینی نهایی با مخاطب است.`;
   }
 
   return {
@@ -2033,7 +2176,44 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
 
 async function startServer() {
   const app = express();
+  // Permit the bundled Capacitor Android WebView and web frontend to call this API.
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+  });
   app.use(express.json({ limit: '2mb' }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'taraneh-api' }));
+
+  app.post('/api/test-providers', async (req, res) => {
+    const { groqApiKey = '', cloudflareApiToken = '', cloudflareAccountId = '', cloudflareModel = '@cf/zai-org/glm-4.7-flash' } = req.body || {};
+    const results: Record<string, { success: boolean; message: string }> = {};
+    const testSystem = 'Return only a JSON object with exactly two string fields: title and lyrics. Use title "Connection test" and lyrics "Connection successful".';
+    const testMessage = 'Connection test. Return the required JSON now.';
+    if (String(groqApiKey).trim()) {
+      const result = await callSelectedAIProvider({ provider: 'groq', groqApiKey: String(groqApiKey).trim(), systemPrompt: testSystem, userMessage: testMessage });
+      results.groq = { success: !!result.success, message: result.success ? 'Groq connected successfully.' : (result.error || 'Groq request failed.') };
+    } else {
+      results.groq = { success: false, message: 'Groq API key is empty.' };
+    }
+    if (String(cloudflareApiToken).trim() && String(cloudflareAccountId).trim()) {
+      const result = await callSelectedAIProvider({
+        provider: 'cloudflare',
+        cloudflareApiToken: String(cloudflareApiToken).trim(),
+        cloudflareAccountId: String(cloudflareAccountId).trim(),
+        cloudflareModel: String(cloudflareModel || '@cf/zai-org/glm-4.7-flash').trim(),
+        systemPrompt: testSystem,
+        userMessage: testMessage,
+      });
+      results.cloudflare = { success: !!result.success, message: result.success ? 'Cloudflare connected successfully.' : (result.error || 'Cloudflare request failed.') };
+    } else {
+      results.cloudflare = { success: false, message: 'Cloudflare API token or Account ID is empty.' };
+    }
+    return res.json({ ok: Object.values(results).some((x) => x.success), results });
+  });
+
 
   // Key validation endpoint for testing keys in the UI
   app.post('/api/test-key', async (req, res) => {
@@ -2204,7 +2384,19 @@ async function startServer() {
       userApiKey = '',
       openrouterApiKey = '',
       openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+      groqApiKey = '',
+      geminiApiKey = '',
+      cloudflareApiToken = '',
+      cloudflareAccountId = '',
+      cloudflareModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     } = req.body || {};
+
+    // Use optional server-side keys as a fallback when the browser did not send one.
+    const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
+    const effectiveGeminiKey = (geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
+    const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
+    const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
 
     if (!prompt.trim()) {
       return res.status(400).json({ error: 'لطفاً پیام یا موضوع ترانه خود را بنویسید.' });
@@ -2215,10 +2407,10 @@ async function startServer() {
 
     const randomNonce = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
-    const systemPrompt = `You are the master engine of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio), inspired by the poetic audacity, intellectual depth, vivid imagery, and emotional truth of modern Persian literature (مکتب ادبی و جسارت هنری فروغ و فریدون فرخزاد) and world-class Suno AI (v4) music production.
+    const systemPrompt = `You are a world-class multilingual songwriter, lyricist, arranger, and Suno music-prompt producer for "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio). Work natively in the user's selected language(s) and dialect(s); Persian is not the default when another language is selected.
 The user wants a brand-new, non-repetitive song composition tailored specifically to:
 - Exact User Theme/Story: "${prompt}"
-- Selected Music Genre / Style: "${musicGenre}"
+- Selected Music Genre / Style (IMMUTABLE PRIMARY GENRE): "${musicGenre}"
 - Song Structure / Type: "${songStructure}"
 - Tempo & BPM: "${tempoBpm}"
 - Vocalist preference: "${vocalType}"
@@ -2227,11 +2419,27 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
 - Dynamic Nonce Seed: "${randomNonce}"
 
 ══════════════════════════════════════════════════════════════════════
+0. USER INTENT, SETTINGS & LANGUAGE CONTRACT:
+══════════════════════════════════════════════════════════════════════
+- Treat the current chat instruction as the exact subject, intended meaning, facts, exclusions, audience, and special constraints. Do not replace it with a nearby or generic theme.
+- Respect every selected setting: song type/structure, primary genre, tempo, mood, vocalist, and all selected languages. A clear explicit instruction in the latest chat message may refine or override only the specific conflicting setting; preserve every other selection.
+- Do not invent an audience profile. If the user specifies an audience, adapt vocabulary and tone to it; otherwise use the natural audience implied by the request.
+- Write meaningfully in every selected language/dialect; do not silently drop one. In mixed-language songs, each passage must genuinely belong to its assigned language and connect naturally to the whole.
+- Use the appropriate native script by default. If the user requests phonetic transliteration (such as Hebrew pronunciation written in Persian letters), preserve it; do not mark it as an error or silently change its script.
+- Apply each language's own grammar, idiom, rhyme, rhythm, syllable stress, and pronunciation. Never impose Persian grammar or Persian rhyme on Kurdish, Lori, Gilaki, Mazanderani, English, French, Hebrew, or any other language.
+- Lyrics and music prompt are one composition: the prompt must support the lyric's language, syllable density, flow, singer configuration, emotion, structure, and selected tempo.
+- Keep singer configuration consistent. For duets, allocate lines/sections to the requested voices; never turn a duet into a solo or vice versa.
+- For exact BPM, use that value. For a tempo range, choose one suitable BPM inside the range and state it consistently in musicPrompt and tempoAndKey. For automatic tempo, choose a genre-appropriate BPM and state it consistently.
+- Do not claim automatic checks prove perfect meaning, prosody, rhyme, or native pronunciation. Create the strongest first draft; the user has the final manual-editing step.
+
+══════════════════════════════════════════════════════════════════════
 1. STRICT ANTI-REPETITION MANDATE (پرهیز قطعی از تکرار در ترانه و پرامپت موزیک):
 ══════════════════════════════════════════════════════════════════════
 - NEITHER the lyrics NOR the Suno "musicPrompt" may EVER be repetitive, templated, or generic!
 - FOR SUNO V4 "musicPrompt":
   * NEVER output repetitive boilerplate prompts.
+  * GENRE LOCK: the exact selected primary genre is "${musicGenre}" and must not be changed. You may add only compatible subgenres. Never turn house/techno/electronic into boom-bap/rap, or rap into house/techno, unless the selected genre explicitly contains both.
+  * The musicPrompt MUST start with the exact selected genre/style wording: "${musicGenre}". Keep the selected tempo (${tempoBpm}) and do not invent a different primary style.
   * Every single generation must feature a rich, surgical sound-design blueprint tailored specifically to "${musicGenre}", "${mood}", and the narrative of "${prompt}".
   * Must include: Exact Primary & Secondary Micro-Genres (e.g. "Persian Alternative Rock, Post-Punk Revival"), Dynamic BPM, Musical Key Signature with Harmonic Modulation (e.g. "C Minor modulating to E-flat Major in Chorus"), Physical & Acoustic Sound Spaces (e.g. "Abbey Road Studio 2 acoustic room, vintage EMT 140 plate reverb, subtle tape flutter, 2-inch analog tape saturation, wide binaural stereo panorama"), Precise Instrument Roster (e.g. "1974 Fender Rhodes, Upright Double Bass, Yamaha C7 Concert Grand Piano, Distorted Moog Sub 37, Brushed Zildjian Cymbals, Solo Armenian Duduk"), and Specific Vocal Delivery & Processing (e.g. "Gritty soul-baring male chest voice, intimate close-mic whisper, layered multi-octave falsetto harmonies, zero autotune, subtle tube warmth").
   * Comprehensive negative exclusions in "excludeStyles" (e.g. "mumble rap, cheerful synth brass, autotune artifacts, robotic monotone, elevator music").
@@ -2247,6 +2455,12 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
   * Under NO circumstances should you insert an archaic, clumsy, or irrelevant word just to force a rhyme!
   * If a rhyme doesn't naturally and elegantly serve the story's meaning, REWRITE THE WHOLE LINE so that the ending rhyme word is familiar, musical, emotionally resonant, and indispensable to the thought.
   * Rhymes must feel inevitable and organic, never forced.
+  * Do not include planning labels such as (A), (B), AABB, or rhyme annotations in the lyric text; only section tags belong in brackets.
+  * Keep a natural rhyme/assonance pattern appropriate to the selected language and genre; never force Persian end-rhymes onto other languages.
+  * Check grammar, idioms, spelling, pronunciation, and word choice separately in every requested language/dialect. Persian-specific literary rules apply only to Persian passages.
+  * In bilingual output, preserve every requested language and its intended script/transliteration. Hebrew words written phonetically in Persian script are valid when that is the user's chosen presentation.
+  * Every phrase must have a clear meaning in its own language and contribute to the song; avoid invented words, meaningless chants, and unrequested decorative foreign phrases.
+  * Perform a final language-by-language read-through for natural grammar, meaning, singability, and fidelity to the user's intent.
 
 ══════════════════════════════════════════════════════════════════════
 3. DIVERSE SONG STRUCTURES (تنوع غنی در ساختارهای ۱۷ گانه ترانه):
@@ -2312,17 +2526,19 @@ Seed: ${randomNonce}
 CRITICAL MANDATES:
 1. Act like a master storyteller from the first line to the last. Every line MUST logically connect to the previous line and lead to the next line (زنجیره داستانی خط به خط).
 2. The meaning of the song is essential. DO NOT pick any word just to make a rhyme! If a rhyme doesn't fit the natural story, restructure the entire line.
-3. Provide a completely original, non-repetitive, surgical Suno v4 "musicPrompt" (sub-genres, acoustic space, tape saturation, key modulation, exact instruments, vocal processing).
+3. Provide a completely original, non-repetitive Suno v4 "musicPrompt", but LOCK its primary genre to exactly "${musicGenre}"; do not switch to an unrelated genre. Begin the prompt with "${musicGenre}" and keep the requested tempo ${tempoBpm}.
 4. Full length: Rich storytelling sections (minimum 24-34 lines total). Never truncate!
 ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversationHistory.slice(-3))}` : ''}`;
 
     // Execution with Rhyme, Meter & Narrative Validation & Automatic Retry Loop
-    const MAX_RETRIES = 2; // Up to 2 retries if rhyme, meter or narrative fails validation
+    const MAX_RETRIES = 1; // One bounded quality-driven rewrite; avoid repeated calls
     let attemptsCount = 0;
     let finalResult: SongGenerationResult | null = null;
+    let lastGeneratedResult: SongGenerationResult | null = null;
     let finalSource = '';
     let finalWarning: string | undefined = undefined;
     let previousAudit: SongQualityAudit | null = null;
+    const providerErrors: string[] = [];
 
     // Retry loop
     while (attemptsCount <= MAX_RETRIES) {
@@ -2333,7 +2549,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         : `${userMessage}
 
 [RETRY MANDATE #${attemptsCount} - دستور اکید مکتب ترانه‌سرای فرخزاد: بازنویسی شاعرانه، افزایش طول و ارتقای قصه ترانه]:
-نسخه قبلی در سیستم اعتبارسنجی بک‌اند به دلیل کوتاهی بیش از حد یا ضعف در پیوند داستانی ابیات مردود شد (نمره قافیه: ${previousAudit?.rhymeScore || 65}، نمره وزن: ${previousAudit?.meterScore || 70}، نمره روایت: ${previousAudit?.narrativeScore || 60}).
+نسخه قبلی در کنترل کیفیت رد شد. دلیل بررسی: ${previousAudit?.notes || 'ساختار، قافیه یا پیوند معنایی نیازمند اصلاح است'} (نمره قافیه: ${previousAudit?.rhymeScore || 50}، نمره خوش‌خوانی: ${previousAudit?.meterScore || 60}، نمره روایت: ${previousAudit?.narrativeScore || 50}).
 تذکرات الزامی بازنویسی:
 ۱. ترانه نباید کوتاه باشد! یک اثر کامل و بلند (حداقل ۲۴ تا ۳۲ مصراع) متناسب با ساختار انتخابی بسرای.
 ۲. دقیقاً مثل یک شاعر و ترانه‌سرای مولف فکر کن و کل داستان «${prompt}» را با ظرافت و عمق روایت کن.
@@ -2342,53 +2558,114 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
 
       let aiResp: any = null;
 
-      if (provider === 'openrouter' || openrouterApiKey) {
-        aiResp = await callSelectedAIProvider({
-          provider: 'openrouter',
-          openrouterApiKey,
-          openrouterModel,
-          userApiKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
-      } else if (provider === 'claude' || provider === 'openai') {
-        aiResp = await callSelectedAIProvider({
-          provider,
-          userApiKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
-      } else if (provider === 'gemini') {
+      // If the user supplied a Gemini key, honor that choice first.
+      // Otherwise use the configured Cloudflare model, then Groq as fallback.
+      if (effectiveGeminiKey) {
         aiResp = await callSelectedAIProvider({
           provider: 'gemini',
-          userApiKey,
+          userApiKey: effectiveGeminiKey,
           systemPrompt,
           userMessage: attemptUserMsg,
         });
+        if (!aiResp?.success && aiResp?.error) providerErrors.push(aiResp.error);
+      }
+
+      if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
+        const fallback = await callSelectedAIProvider({
+          provider: 'cloudflare',
+          cloudflareApiToken: effectiveCloudflareToken,
+          cloudflareAccountId: effectiveCloudflareAccount,
+          cloudflareModel: effectiveCloudflareModel,
+          systemPrompt,
+          userMessage: attemptUserMsg,
+        });
+        if (fallback.success) aiResp = { ...fallback, warning: effectiveGeminiKey ? 'Gemini پاسخ نداد؛ تولید به مدل Cloudflare منتقل شد.' : undefined };
+        else if (fallback.error) providerErrors.push(fallback.error);
+      }
+
+      if (!aiResp?.success && effectiveGroqKey) {
+        const fallback = await callSelectedAIProvider({
+          provider: 'groq',
+          groqApiKey: effectiveGroqKey,
+          systemPrompt,
+          userMessage: attemptUserMsg,
+        });
+        if (fallback.success) aiResp = { ...fallback, warning: 'مدل‌های قبلی پاسخ ندادند؛ تولید به Groq منتقل شد.' };
+        else if (fallback.error) providerErrors.push(fallback.error);
       }
 
       if (aiResp && aiResp.success && aiResp.result) {
-        const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt);
+        // Enforce the selected controls in metadata and keep the Suno prompt's genre/BPM aligned.
+        // Providers sometimes return correct lyrics but drift on metadata or tempo labels.
+        const requestedGenre = String(musicGenre || '').trim();
+        let lockedMusicPrompt = String(aiResp.result.musicPrompt || '').trim();
+        if (requestedGenre) {
+          aiResp.result.genre = requestedGenre;
+          const startsWithRequestedGenre = lockedMusicPrompt.toLocaleLowerCase().startsWith(requestedGenre.toLocaleLowerCase());
+          if (!startsWithRequestedGenre) {
+            const remainingPrompt = lockedMusicPrompt.includes(',')
+              ? lockedMusicPrompt.slice(lockedMusicPrompt.indexOf(',') + 1).trim()
+              : lockedMusicPrompt;
+            lockedMusicPrompt = remainingPrompt ? `${requestedGenre}, ${remainingPrompt}` : requestedGenre;
+          }
+        }
+
+        const tempoText = String(tempoBpm || '').trim();
+        const tempoRange = tempoText.match(/(\d{2,3})\s*[-–]\s*(\d{2,3})\+?\s*BPM/i);
+        const exactTempo = tempoRange ? null : tempoText.match(/\b(\d{2,3})\s*BPM\b/i);
+        if (tempoRange) {
+          const minBpm = Number(tempoRange[1]);
+          const maxBpm = Number(tempoRange[2]);
+          const promptTempo = lockedMusicPrompt.match(/\b(\d{2,3})\s*BPM\b/i);
+          const proposedBpm = promptTempo ? Number(promptTempo[1]) : 0;
+          const selectedBpm = proposedBpm >= minBpm && proposedBpm <= maxBpm
+            ? proposedBpm
+            : Math.round((minBpm + maxBpm) / 2);
+          lockedMusicPrompt = promptTempo
+            ? lockedMusicPrompt.replace(promptTempo[0], `${selectedBpm} BPM`)
+            : `${lockedMusicPrompt}, ${selectedBpm} BPM`;
+          const keyAndDetails = String(aiResp.result.tempoAndKey || '').replace(/\b\d{2,3}\s*BPM\b/ig, '').replace(/^[,\s·]+/, '').trim();
+          aiResp.result.tempoAndKey = keyAndDetails ? `${selectedBpm} BPM, ${keyAndDetails}` : `${selectedBpm} BPM`;
+        } else if (exactTempo) {
+          const selectedBpm = Number(exactTempo[1]);
+          const promptTempo = lockedMusicPrompt.match(/\b\d{2,3}\s*BPM\b/i);
+          lockedMusicPrompt = promptTempo
+            ? lockedMusicPrompt.replace(promptTempo[0], `${selectedBpm} BPM`)
+            : `${lockedMusicPrompt}, ${selectedBpm} BPM`;
+          const keyAndDetails = String(aiResp.result.tempoAndKey || '').replace(/\b\d{2,3}\s*BPM\b/ig, '').replace(/^[,\s·]+/, '').trim();
+          aiResp.result.tempoAndKey = keyAndDetails ? `${selectedBpm} BPM, ${keyAndDetails}` : `${selectedBpm} BPM`;
+        }
+        aiResp.result.musicPrompt = lockedMusicPrompt;
+        aiResp.result.songType = songStructure;
+        aiResp.result.vocalType = vocalType;
+        aiResp.result.mood = mood;
+        aiResp.result.language = langString;
+        lastGeneratedResult = aiResp.result;
+        const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt, langString);
         audit.attemptsMade = attemptsCount;
         aiResp.result.qualityAudit = audit;
         previousAudit = audit;
 
-        // If audit passed or we reached maximum retries, accept and return
-        if (audit.passed || attemptsCount > MAX_RETRIES) {
+        // Never deliver a failed lyric as if it were an acceptable result.
+        if (audit.passed) {
           finalResult = aiResp.result;
           finalSource = aiResp.source;
           finalWarning = aiResp.warning;
           break;
         }
-        // If not passed and retries remain, loop continues to re-generate with feedback
+        // One quality-driven rewrite is allowed. If it still fails, return a clear quality error below.
+        if (attemptsCount > MAX_RETRIES) break;
       } else {
-        if ((provider === 'openrouter' && openrouterApiKey) || provider === 'claude' || provider === 'openai') {
-          return res.status(400).json({
-            error: aiResp?.error || `خطا در ارتباط با موتور ${provider}.`,
-            provider,
-          });
-        }
-        break; // If no openrouter key was provided and fallback was needed, fallback gracefully to studio engine
+        // Never stop at the primary provider error. All configured fallbacks have already been tried;
+        // continue to the local studio engine so the user still gets a result.
+        console.warn('[AI fallback exhausted]', {
+          provider,
+          primaryError: aiResp?.error || 'unknown provider error',
+          groqConfigured: Boolean(effectiveGroqKey),
+          cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
+          providerErrors: providerErrors.slice(-4),
+        });
+        break;
       }
     }
 
@@ -2400,28 +2677,47 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       });
     }
 
-    // 3. Studio Engine Fallback if AI provider could not complete
-    const crafted = craftSong({
-      prompt,
-      genre: musicGenre,
-      songType: songStructure,
-      tempoBpm,
-      vocalType,
-      mood,
-      language: activeLangs,
-      languages: activeLangs,
-      conversationHistory,
-    });
-    const studioAudit = analyzeSongQualityAudit(crafted.lyrics, musicGenre, prompt);
-    studioAudit.attemptsMade = 1;
-    crafted.qualityAudit = studioAudit;
+    // If the heuristic audit fails, ask Gemini to repair the existing song rather than generating from scratch.
+    // This keeps the rewrite focused and avoids spending tokens on a second full composition.
+    if (!finalResult && lastGeneratedResult && previousAudit && !previousAudit.passed && effectiveGeminiKey) {
+      const rewriteSystem = `You are a meticulous multilingual songwriter and lyric editor. Return exactly one valid JSON object with the same song fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles. Preserve the user's exact theme, intent, selected languages/dialects, genre, tempo, vocalist, mood, structure, audience, and useful lines. Improve meaning, native grammar, natural rhyme, syllabic cadence, singability, narrative continuity, and remove genuinely meaningless filler. Never treat a requested foreign language, valid bilingual passage, Hebrew transliteration in Persian script, or proper name as contamination. Apply language-specific rules only to relevant passages; never impose Persian rhyme or grammar on other languages. Never force a rhyme with an unrelated word. Keep useful Suno section tags in English square brackets. Aim for 24-34 lyric lines unless the selected song form clearly requires otherwise. Keep music metadata consistent with the lyrics, selected genre, BPM, vocalist, mood, and arrangement. Do not explain edits outside the JSON.`;
+      const rewriteMessage = `Repair and complete this existing song, not a brand-new unrelated song.\nTheme: ${String(prompt).slice(0, 1200)}\nGenre: ${musicGenre}\nStructure: ${songStructure}\nMood: ${mood}\nLanguage: ${langString}\nQuality audit notes: ${previousAudit.notes || 'Improve rhyme, cadence and narrative coherence.'}\nAudit scores: rhyme ${previousAudit.rhymeScore}, cadence ${previousAudit.meterScore}, narrative ${previousAudit.narrativeScore}.\nExisting song JSON:\n${JSON.stringify(lastGeneratedResult).slice(0, 10000)}`;
+      const geminiRewrite = await callSelectedAIProvider({
+        provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: rewriteSystem, userMessage: rewriteMessage,
+      });
+      if (geminiRewrite.success && geminiRewrite.result) {
+        const rewritten = geminiRewrite.result;
+        const rewriteAudit = analyzeSongQualityAudit(rewritten.lyrics || '', musicGenre, prompt, langString);
+        rewriteAudit.attemptsMade = attemptsCount + 1;
+        rewritten.qualityAudit = rewriteAudit;
+        finalResult = rewritten;
+        finalSource = geminiRewrite.source;
+        finalWarning = rewriteAudit.passed
+          ? 'ترانه پس از بازنویسی متمرکز Gemini بررسی شد.'
+          : 'Gemini ترانه را بازنویسی کرد؛ ارزیابی خودکار هنوز چند ایراد احتمالی نشان می‌دهد و این ارزیابی تضمین ادبی نیست.';
+      } else {
+        providerErrors.push(geminiRewrite.error || 'Gemini نتوانست نسخه را بازنویسی کند.');
+      }
+    }
 
-    return res.json({
-      result: crafted,
-      source: 'studio-engine',
-      warning: userApiKey || openrouterApiKey
-        ? 'کلید وارد شده با محدودیت مواجه شد؛ اثر با موتور هوشمند استودیو آفریده شد.'
-        : 'سرویس ابری با ترافیک بالا مواجه شد؛ اثر با موتور هوشمند استودیو آفریده شد.',
+    // Quality checks are advisory: never discard an available song solely because a heuristic score is low.
+    if (!finalResult && lastGeneratedResult) {
+      finalResult = lastGeneratedResult;
+      finalSource = 'best-available';
+      finalWarning = 'ترانه تحویل داده شد، اما بررسی خودکار چند ایراد احتمالی نشان داده است؛ لطفاً متن را هم مرور کن.';
+      finalResult.qualityAudit = previousAudit || undefined;
+    }
+
+    if (finalResult) {
+      return res.json({ result: finalResult, source: finalSource, warning: finalWarning });
+    }
+
+    // Do not silently substitute canned/local lyrics when cloud providers fail.
+    return res.status(502).json({
+      error: providerErrors.length ? providerErrors.join(' | ') : 'اتصال به هوش مصنوعی برقرار نشد. کلید Groq یا Cloudflare و تنظیمات آن‌ها را بررسی کنید.',
+      provider: 'groq/cloudflare',
+      groqConfigured: Boolean(effectiveGroqKey),
+      cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
     });
   });
 
@@ -2435,13 +2731,24 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       userApiKey = '',
       openrouterApiKey = '',
       openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+      groqApiKey = '',
+      geminiApiKey = '',
+      cloudflareApiToken = '',
+      cloudflareAccountId = '',
+      cloudflareModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     } = req.body || {};
+
+    const effectiveGroqKey = (groqApiKey || process.env.GROQ_API_KEY || '').trim();
+    const effectiveGeminiKey = (geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
+    const effectiveCloudflareToken = (cloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || '').trim();
+    const effectiveCloudflareAccount = (cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+    const effectiveCloudflareModel = (cloudflareModel || process.env.CLOUDFLARE_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast').trim();
 
     if (!currentSong || !currentSong.lyrics) {
       return res.status(400).json({ error: 'اطلاعات ترانه فعلی برای ویرایش موجود نیست.' });
     }
 
-    const editPrompt = `You are the master songwriter and music editor of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio) for Suno AI (v4).
+    const editPrompt = `You are the multilingual master songwriter and music editor of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio) for Suno AI (v4).
 The user wants to EDIT and REFINE an existing song according to their specific instructions.
 
 Existing Song Title: "${currentSong.title}"
@@ -2459,60 +2766,66 @@ USER'S EDIT INSTRUCTION (دستور ویرایش مخاطب):
 Target of Edit: ${targetField}
 
 REQUIREMENTS:
-1. Apply the user's modifications precisely while preserving the overall style, meter, and core story narrative of the song.
-2. UNBROKEN STORYTELLING CHAIN: Act like a master storyteller from start to finish. Every line must logically connect to the previous line and next line.
+1. Apply the user's modifications precisely while preserving the original theme, languages/dialects, genre, BPM, structure, mood, singer configuration, audience, and story. A new explicit edit instruction changes only the constraint it directly addresses.
+2. UNBROKEN STORYTELLING CHAIN: Every line must logically connect to the previous and next line while remaining natural in its own language.
 3. ABSOLUTE BAN ON FORCED RHYMES: Never insert random, archaic, or irrelevant words just to force a rhyme; meaning and narrative depth are paramount.
 4. DO NOT shorten the song! Maintain a rich, complete structure (at least 24 to 34 poetic lines) with authentic English section headers.
 5. STRICT ANTI-REPETITION: Keep lyrics and musicPrompt fresh, avoiding cliche repetitions or generic filler.
 6. Keep English section headers in lyrics: [Intro: ...], [Verse 1: ...], [Chorus: ...], [Verse 2: ...], [Bridge: ...], [Outro: ...].
 7. Update "musicPrompt" in authentic English with surgical precision (micro-genre, acoustic space, instruments, BPM, key, audio engineering).
-8. In "composerNote", explain in Persian what poetic and narrative modifications were made.`;
+8. In "composerNote", explain in Persian what poetic and narrative modifications were made.
+9. GENRE LOCK: preserve the existing song's exact primary genre. Do not switch between electronic/house/techno and rap/boom-bap, rock, orchestral, or any other unrelated style. Only add compatible subgenres; the musicPrompt must begin by naming the existing song's primary genre.
+10. Keep the original musicPrompt's genre, BPM and key unless the user explicitly asks to change them. Keep lyrics and music prompt mutually consistent, including syllable density, flow, singer roles, mood and arrangement. Never treat valid multilingual lyrics or requested transliteration as an error.`;
 
     const userMessage = `Edit and refine this song based on: "${instruction}". Return the complete updated JSON.`;
 
-    let aiResp = await callSelectedAIProvider({
-      provider: openrouterApiKey ? 'openrouter' : (provider || 'gemini'),
-      userApiKey,
-      openrouterApiKey,
-      openrouterModel,
+    let aiResp = effectiveGeminiKey
+      ? await callSelectedAIProvider({ provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: editPrompt, userMessage })
+      : await callSelectedAIProvider({
+      provider: effectiveGroqKey ? 'groq' : 'cloudflare',
+      groqApiKey: effectiveGroqKey,
+      cloudflareApiToken: effectiveCloudflareToken,
+      cloudflareAccountId: effectiveCloudflareAccount,
+      cloudflareModel: effectiveCloudflareModel,
       systemPrompt: editPrompt,
       userMessage,
     });
+    if (!aiResp?.success) {
+      if (effectiveGroqKey) {
+        const fallback = await callSelectedAIProvider({ provider: 'groq', groqApiKey: effectiveGroqKey, systemPrompt: editPrompt, userMessage });
+        if (fallback.success) aiResp = { ...fallback, warning: 'ویرایش Gemini ناموفق بود؛ ویرایش به‌صورت خودکار به Groq منتقل شد.' };
+      }
+      if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
+        const fallback = await callSelectedAIProvider({ provider: 'cloudflare', cloudflareApiToken: effectiveCloudflareToken, cloudflareAccountId: effectiveCloudflareAccount, cloudflareModel: effectiveCloudflareModel, systemPrompt: editPrompt, userMessage });
+        if (fallback.success) aiResp = { ...fallback, warning: 'Gemini و Groq برای ویرایش پاسخگو نبودند؛ ویرایش به Cloudflare منتقل شد.' };
+      }
+    }
 
     if (aiResp && aiResp.success && aiResp.result) {
       const audit = analyzeSongQualityAudit(
         aiResp.result.lyrics || '',
         currentSong.genre || '',
-        instruction || currentSong.title
+        instruction || currentSong.title,
+        currentSong.language || 'فارسی'
       );
       audit.attemptsMade = 1;
       aiResp.result.qualityAudit = audit;
-      return res.json({ result: aiResp.result, source: aiResp.source });
+      return res.json({ result: aiResp.result, source: aiResp.source, warning: audit.passed ? aiResp.warning : 'نسخه تحویل داده شد، اما ارزیابی خودکار هنوز چند ایراد احتمالی نشان می‌دهد.' });
     }
 
-    // If live AI call was unavailable, intelligently apply instruction to current song
-    const modifiedSong: SongGenerationResult = {
-      ...currentSong,
-      composerNote: `ویرایش دستی اعمال شد: ${instruction || 'بهینه‌سازی قافیه‌ها و ساختار'}.`,
-    };
-    const audit = analyzeSongQualityAudit(
-      modifiedSong.lyrics,
-      modifiedSong.genre || '',
-      instruction
-    );
-    modifiedSong.qualityAudit = audit;
-
-    return res.json({
-      result: modifiedSong,
-      source: 'studio-engine',
-      warning: 'ویرایش با موتور هوشمند استودیو ذخیره شد.',
+    return res.status(502).json({
+      error: aiResp?.error || 'اتصال به هوش مصنوعی برقرار نشد. کلید Groq یا Cloudflare را بررسی کنید.',
+      provider: 'groq/cloudflare',
+      groqConfigured: Boolean(effectiveGroqKey),
+      cloudflareConfigured: Boolean(effectiveCloudflareToken && effectiveCloudflareAccount),
     });
   });
 
   // Dedicated Quality Audit Endpoint for real-time rhyme, meter & narrative analysis
   app.post('/api/audit-song', (req, res) => {
-    const { lyrics = '', genre = '', prompt = '' } = req.body || {};
-    const audit = analyzeSongQualityAudit(lyrics, genre, prompt);
+    const { lyrics = '', genre = '', prompt = '', language = 'فارسی', languages = [] } = req.body || {};
+    const auditLanguage = Array.isArray(languages) && languages.length ? languages.join(' + ') : language;
+    const audit = analyzeSongQualityAudit(lyrics, genre, prompt, auditLanguage);
     return res.json({ audit });
   });
 
