@@ -2007,7 +2007,7 @@ Before returning, silently check: all required fields exist; lyrics contain labe
 
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
-export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: string): SongQualityAudit {
+export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: string, languageContext = 'فارسی'): SongQualityAudit {
   const lyricLines = lyrics.split('\n').map((l) => l.trim()).filter(Boolean);
   const lines = lyricLines.filter((l) => !l.startsWith('[') && !l.startsWith('('));
   const sectionTags = lyricLines.filter((l) => /^\[[^\]]+\]$/.test(l));
@@ -2017,7 +2017,10 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   // Repeated choruses are normal; flag only lines repeated more than three times.
   const duplicateLineCount = Array.from(lineFrequency.values()).reduce((count, frequency) => count + Math.max(0, frequency - 3), 0);
   const repeatedLineRatio = normalizedLines.length ? duplicateLineCount / normalizedLines.length : 1;
-  const isPersianRequest = /[\u0600-\u06FF]/.test(lyrics) && !/انگلیسی|english|دو زبانه|bilingual/i.test(`${prompt} ${genre}`);
+  const normalizedLanguageContext = String(languageContext || '').toLocaleLowerCase();
+  const requestedLanguageParts = normalizedLanguageContext.split(/[+,،/|]/).map((part) => part.trim()).filter(Boolean);
+  const isPersianOnlyRequest = requestedLanguageParts.length === 1 &&
+    /^(فارسی|persian|farsi)$/.test(requestedLanguageParts[0]);
 
   // Tags do not count as sung lines. Enforce a complete, non-truncated song.
   if (lines.length < 24) {
@@ -2048,8 +2051,8 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   if (hasBridgeOrClimax) structureScore += 10;
   if (hasOutro) structureScore += 5;
 
-  // 3. Conservative, stanza-aware rhyme audit. This is a heuristic, not a substitute for a human poet.
-  // Normalize Persian/Arabic letter variants and ignore punctuation/half-spaces at line endings.
+  // 3. Language-aware rhyme estimate. The suffix heuristic is only a rough Persian signal;
+  // it must never grade other languages or mixed-language lyrics as if they were Persian.
   const rhymeGroups: string[][] = [];
   let currentRhymeGroup: string[] = [];
   for (const rawLine of lyricLines) {
@@ -2092,10 +2095,10 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const excessiveRepetitions = Object.values(rhymeWordFrequency).filter((count) => count > 3).length;
   const rawRhymeRatio = totalEvaluations > 0 ? rhymePairs / totalEvaluations : 0;
   // Do not award a high baseline to a song with no assessable couplet rhymes.
-  let rhymeScore = totalEvaluations > 0
-    ? Math.round(38 + rawRhymeRatio * 62)
-    : 45;
-  if (excessiveRepetitions > 0) rhymeScore = Math.max(35, rhymeScore - excessiveRepetitions * 7);
+  let rhymeScore = isPersianOnlyRequest
+    ? (totalEvaluations > 0 ? Math.round(38 + rawRhymeRatio * 62) : 45)
+    : 72; // Neutral advisory score; no false Persian-rhyme judgment for other languages.
+  if (isPersianOnlyRequest && excessiveRepetitions > 0) rhymeScore = Math.max(35, rhymeScore - excessiveRepetitions * 7);
 
   // 4. Rough cadence proxy, evaluated within sections so a spoken intro does not distort a sung chorus.
   // Word-count consistency is only a weak proxy for singability; it cannot certify aruz meter.
@@ -2118,31 +2121,24 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const variance = cadenceVariances.length
     ? cadenceVariances.reduce((a, b) => a + b, 0) / cadenceVariances.length
     : 10;
-  const meterScore = Math.max(38, Math.min(82, Math.round(82 - variance * 4)));
+  const meterScore = isPersianOnlyRequest
+    ? Math.max(38, Math.min(82, Math.round(82 - variance * 4)))
+    : 65; // Word-count variance is not a valid prosody test across unrelated languages.
 
   // 5. Deep Storytelling Coherence & Semantic Narrative Arc (پیوند ارگانیک داستان، پیوستگی معنایی و قصه اصلی)
-  const pWords = prompt
-    .replace(/[،.؛:!؟?]+/g, ' ')
-    .split(/\s+/)
-    .filter((w) => w.length > 2);
-  const mentionsThemeCount = pWords.filter((w) => lyrics.includes(w)).length;
-  const narrativeDepthRatio = pWords.length > 0 ? Math.min(1, mentionsThemeCount / Math.max(1, pWords.length * 0.35)) : 0.85;
-
-  let narrativeScore = Math.round(structureScore * 0.45 + narrativeDepthRatio * 40 + 15);
-  if (lines.length >= 24) narrativeScore += 6;
-  if (!hasPart2) narrativeScore = Math.min(72, narrativeScore - 14); // Must have Part 2 to be a full developed story
-  narrativeScore = Math.min(99, Math.max(60, narrativeScore));
+  // Deterministic checks cannot truly understand semantic fidelity. Score visible story
+  // structure only; the generation instructions handle meaning, and the user has final edit.
+  let narrativeScore = Math.round(structureScore * 0.65 + 35);
+  if (lines.length >= 24) narrativeScore += 4;
+  if (!hasPart2) narrativeScore = Math.min(72, narrativeScore - 14);
+  narrativeScore = Math.min(95, Math.max(60, narrativeScore));
 
   // Overall Score & Strict Quality Threshold
-  const hasObviousLatinIntrusion = isPersianRequest && lines.filter((line) => /\b[a-zA-Z]{3,}\b/.test(line)).length >= 2;
-  // Reject accidental foreign-script contamination (e.g. a Chinese character inside Persian lyrics).
-  // English Suno section tags are excluded from "lines" above, so these checks target lyric content only.
-  const hasForeignScriptIntrusion = isPersianRequest &&
-    /[\u3400-\u4DBF\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF\u0900-\u097F\u0E00-\u0E7F\u0400-\u04FF]/.test(lines.join(' '));
+  // Never reject valid bilingual writing, proper names, or another script by appearance alone.
   const hasExcessiveLineDuplication = repeatedLineRatio > 0.08 || duplicateLineCount >= 2;
   const overallScore = Math.round(rhymeScore * 0.35 + meterScore * 0.3 + narrativeScore * 0.35);
-  const passed = overallScore >= 78 && rhymeScore >= 72 && meterScore >= 58 && narrativeScore >= 65 && lines.length >= 24 &&
-    hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication && !hasObviousLatinIntrusion && !hasForeignScriptIntrusion;
+  const passed = overallScore >= 72 && rhymeScore >= 68 && meterScore >= 58 && narrativeScore >= 65 && lines.length >= 24 &&
+    hasRequiredSunoArc && hasAtLeastFiveTags && !hasExcessiveLineDuplication;
 
   let verdict: 'عالی و تأییدشده' | 'خوب' | 'نیاز به بهینه‌سازی' = 'عالی و تأییدشده';
   if (overallScore < 76 || !passed) {
@@ -2154,17 +2150,17 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
   const cleanGenre = genre ? genre.split('(')[0].trim() : 'موسیقی';
   let notes = '';
   if (passed) {
-    notes = `مکتب ادبی ترانه‌سرای فرخزاد: ترانه با ساختار دراماتیک و غنی (${lines.length} سطر)، قافیه‌های طبیعی و هدفمند بدون کلمات زوری و پیوند استوار روایی در سبک «${cleanGenre}» تایید گردید.`;
+    notes = isPersianOnlyRequest
+      ? `ساختار ترانه از بررسی خودکار عبور کرد (${lines.length} سطر). قافیه و خوش‌خوانی فقط تقریبی سنجیده شده‌اند و تأیید قطعی ادبی نیستند؛ بازبینی نهایی با مخاطب است.`
+      : `ساختار ترانه از بررسی خودکار عبور کرد (${lines.length} سطر). قافیه و وزن تخصصی زبان «${languageContext}» به‌طور خودکار تأیید نشده‌اند؛ بازبینی نهایی با مخاطب است.`;
   } else if (lines.length < 24 || !hasRequiredSunoArc || !hasAtLeastFiveTags) {
-    notes = `ساختار ناقص است: ${lines.length} سطر اجرایی و ${sectionTags.length} برچسب بخش. ورس ۱ و ۲، کورس، بریج و اوترو را با برچسب‌های روشن سونو کامل کن.`;
+    notes = `ساختار کامل نیست: ${lines.length} سطر و ${sectionTags.length} برچسب بخش؛ ساختار انتخابی را کامل کن.`;
   } else if (hasExcessiveLineDuplication) {
     notes = 'چند سطر تکراری یا تقریباً تکراری دیده می‌شود؛ آن‌ها را با تصویرها و اطلاعات تازه جایگزین کن.';
-  } else if (hasObviousLatinIntrusion) {
-    notes = 'در متن فارسی چند واژه لاتین نامتناسب دیده می‌شود؛ آن‌ها را حذف کن، مگر نام خاصی که واقعاً جزئی از موضوع باشد.';
-  } else if (hasForeignScriptIntrusion) {
-    notes = 'نویسه‌ای از خطی نامرتبط با زبان درخواستی در متن پیدا شد؛ ترانه را کاملاً به زبان درخواستی بازنویسی کن و هیچ نویسهٔ چینی، ژاپنی، کره‌ای، سیریلیک یا خط بیگانه‌ای را وارد شعر نکن.';
   } else {
-    notes = `قافیه‌بندی، خوش‌خوانی یا پیوند معنایی هنوز نیازمند بازنویسی است. برای جور شدن قافیه، واژه پایانی را دست‌کاری نکن؛ مصراع را از نو بر اساس معنای روایت بنویس. ژانر: «${cleanGenre}».`;
+    notes = isPersianOnlyRequest
+      ? `ساختار، قافیه و خوش‌خوانی به‌صورت تقریبی بررسی شد؛ این نمره تضمین عروض یا کیفیت ادبی نیست. ژانر: «${cleanGenre}».`
+      : `ساختار و تکرار متن بررسی شد؛ قافیه و وزن زبان «${languageContext}» با قواعد فارسی نمره‌گذاری نشده‌اند. بازبینی نهایی با مخاطب است.`;
   }
 
   return {
@@ -2411,7 +2407,7 @@ async function startServer() {
 
     const randomNonce = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
-    const systemPrompt = `You are the master engine of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio), inspired by the poetic audacity, intellectual depth, vivid imagery, and emotional truth of modern Persian literature (مکتب ادبی و جسارت هنری فروغ و فریدون فرخزاد) and world-class Suno AI (v4) music production.
+    const systemPrompt = `You are a world-class multilingual songwriter, lyricist, arranger, and Suno music-prompt producer for "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio). Work natively in the user's selected language(s) and dialect(s); Persian is not the default when another language is selected.
 The user wants a brand-new, non-repetitive song composition tailored specifically to:
 - Exact User Theme/Story: "${prompt}"
 - Selected Music Genre / Style (IMMUTABLE PRIMARY GENRE): "${musicGenre}"
@@ -2421,6 +2417,20 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
 - Mood & Emotional Atmosphere: "${mood}"
 - Language(s): "${langString}"
 - Dynamic Nonce Seed: "${randomNonce}"
+
+══════════════════════════════════════════════════════════════════════
+0. USER INTENT, SETTINGS & LANGUAGE CONTRACT:
+══════════════════════════════════════════════════════════════════════
+- Treat the current chat instruction as the exact subject, intended meaning, facts, exclusions, audience, and special constraints. Do not replace it with a nearby or generic theme.
+- Respect every selected setting: song type/structure, primary genre, tempo, mood, vocalist, and all selected languages. A clear explicit instruction in the latest chat message may refine or override only the specific conflicting setting; preserve every other selection.
+- Do not invent an audience profile. If the user specifies an audience, adapt vocabulary and tone to it; otherwise use the natural audience implied by the request.
+- Write meaningfully in every selected language/dialect; do not silently drop one. In mixed-language songs, each passage must genuinely belong to its assigned language and connect naturally to the whole.
+- Use the appropriate native script by default. If the user requests phonetic transliteration (such as Hebrew pronunciation written in Persian letters), preserve it; do not mark it as an error or silently change its script.
+- Apply each language's own grammar, idiom, rhyme, rhythm, syllable stress, and pronunciation. Never impose Persian grammar or Persian rhyme on Kurdish, Lori, Gilaki, Mazanderani, English, French, Hebrew, or any other language.
+- Lyrics and music prompt are one composition: the prompt must support the lyric's language, syllable density, flow, singer configuration, emotion, structure, and selected tempo.
+- Keep singer configuration consistent. For duets, allocate lines/sections to the requested voices; never turn a duet into a solo or vice versa.
+- For exact BPM, use that value. For a tempo range, choose one suitable BPM inside the range and state it consistently in musicPrompt and tempoAndKey. For automatic tempo, choose a genre-appropriate BPM and state it consistently.
+- Do not claim automatic checks prove perfect meaning, prosody, rhyme, or native pronunciation. Create the strongest first draft; the user has the final manual-editing step.
 
 ══════════════════════════════════════════════════════════════════════
 1. STRICT ANTI-REPETITION MANDATE (پرهیز قطعی از تکرار در ترانه و پرامپت موزیک):
@@ -2605,7 +2615,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           }
         }
         lastGeneratedResult = aiResp.result;
-        const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt);
+        const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt, langString);
         audit.attemptsMade = attemptsCount;
         aiResp.result.qualityAudit = audit;
         previousAudit = audit;
@@ -2644,14 +2654,14 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
     // If the heuristic audit fails, ask Gemini to repair the existing song rather than generating from scratch.
     // This keeps the rewrite focused and avoids spending tokens on a second full composition.
     if (!finalResult && lastGeneratedResult && previousAudit && !previousAudit.passed && effectiveGeminiKey) {
-      const rewriteSystem = `You are a meticulous Persian songwriter and lyric editor. Return exactly one valid JSON object with the same song fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles. Rewrite the supplied existing song, preserving its intended theme, genre, emotional point of view and useful lines. Fix meaning, natural Persian grammar, stanza-level rhyme, singable cadence, narrative continuity, accidental foreign-script characters, invented transliterations, pseudo-words, unexplained foreign catchphrases and repeated filler. For Persian-only songs, use idiomatic Persian throughout unless the user explicitly requested a foreign phrase. Never force a rhyme with an unrelated word. Keep useful Suno section tags in English square brackets. Aim for 24-34 lyric lines. Do not explain your edits outside the JSON. Keep music metadata consistent with the song.`;
+      const rewriteSystem = `You are a meticulous multilingual songwriter and lyric editor. Return exactly one valid JSON object with the same song fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles. Preserve the user's exact theme, intent, selected languages/dialects, genre, tempo, vocalist, mood, structure, audience, and useful lines. Improve meaning, native grammar, natural rhyme, syllabic cadence, singability, narrative continuity, and remove genuinely meaningless filler. Never treat a requested foreign language, valid bilingual passage, Hebrew transliteration in Persian script, or proper name as contamination. Apply language-specific rules only to relevant passages; never impose Persian rhyme or grammar on other languages. Never force a rhyme with an unrelated word. Keep useful Suno section tags in English square brackets. Aim for 24-34 lyric lines unless the selected song form clearly requires otherwise. Keep music metadata consistent with the lyrics, selected genre, BPM, vocalist, mood, and arrangement. Do not explain edits outside the JSON.`;
       const rewriteMessage = `Repair and complete this existing song, not a brand-new unrelated song.\nTheme: ${String(prompt).slice(0, 1200)}\nGenre: ${musicGenre}\nStructure: ${songStructure}\nMood: ${mood}\nLanguage: ${langString}\nQuality audit notes: ${previousAudit.notes || 'Improve rhyme, cadence and narrative coherence.'}\nAudit scores: rhyme ${previousAudit.rhymeScore}, cadence ${previousAudit.meterScore}, narrative ${previousAudit.narrativeScore}.\nExisting song JSON:\n${JSON.stringify(lastGeneratedResult).slice(0, 10000)}`;
       const geminiRewrite = await callSelectedAIProvider({
         provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt: rewriteSystem, userMessage: rewriteMessage,
       });
       if (geminiRewrite.success && geminiRewrite.result) {
         const rewritten = geminiRewrite.result;
-        const rewriteAudit = analyzeSongQualityAudit(rewritten.lyrics || '', musicGenre, prompt);
+        const rewriteAudit = analyzeSongQualityAudit(rewritten.lyrics || '', musicGenre, prompt, langString);
         rewriteAudit.attemptsMade = attemptsCount + 1;
         rewritten.qualityAudit = rewriteAudit;
         finalResult = rewritten;
@@ -2712,7 +2722,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       return res.status(400).json({ error: 'اطلاعات ترانه فعلی برای ویرایش موجود نیست.' });
     }
 
-    const editPrompt = `You are the master songwriter and music editor of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio) for Suno AI (v4).
+    const editPrompt = `You are the multilingual master songwriter and music editor of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio) for Suno AI (v4).
 The user wants to EDIT and REFINE an existing song according to their specific instructions.
 
 Existing Song Title: "${currentSong.title}"
@@ -2730,8 +2740,8 @@ USER'S EDIT INSTRUCTION (دستور ویرایش مخاطب):
 Target of Edit: ${targetField}
 
 REQUIREMENTS:
-1. Apply the user's modifications precisely while preserving the overall style, meter, and core story narrative of the song.
-2. UNBROKEN STORYTELLING CHAIN: Act like a master storyteller from start to finish. Every line must logically connect to the previous line and next line.
+1. Apply the user's modifications precisely while preserving the original theme, languages/dialects, genre, BPM, structure, mood, singer configuration, audience, and story. A new explicit edit instruction changes only the constraint it directly addresses.
+2. UNBROKEN STORYTELLING CHAIN: Every line must logically connect to the previous and next line while remaining natural in its own language.
 3. ABSOLUTE BAN ON FORCED RHYMES: Never insert random, archaic, or irrelevant words just to force a rhyme; meaning and narrative depth are paramount.
 4. DO NOT shorten the song! Maintain a rich, complete structure (at least 24 to 34 poetic lines) with authentic English section headers.
 5. STRICT ANTI-REPETITION: Keep lyrics and musicPrompt fresh, avoiding cliche repetitions or generic filler.
@@ -2739,7 +2749,7 @@ REQUIREMENTS:
 7. Update "musicPrompt" in authentic English with surgical precision (micro-genre, acoustic space, instruments, BPM, key, audio engineering).
 8. In "composerNote", explain in Persian what poetic and narrative modifications were made.
 9. GENRE LOCK: preserve the existing song's exact primary genre. Do not switch between electronic/house/techno and rap/boom-bap, rock, orchestral, or any other unrelated style. Only add compatible subgenres; the musicPrompt must begin by naming the existing song's primary genre.
-10. Keep the original musicPrompt's genre, BPM and key unless the user explicitly asks to change them.`;
+10. Keep the original musicPrompt's genre, BPM and key unless the user explicitly asks to change them. Keep lyrics and music prompt mutually consistent, including syllable density, flow, singer roles, mood and arrangement. Never treat valid multilingual lyrics or requested transliteration as an error.`;
 
     const userMessage = `Edit and refine this song based on: "${instruction}". Return the complete updated JSON.`;
 
@@ -2769,7 +2779,8 @@ REQUIREMENTS:
       const audit = analyzeSongQualityAudit(
         aiResp.result.lyrics || '',
         currentSong.genre || '',
-        instruction || currentSong.title
+        instruction || currentSong.title,
+        currentSong.language || 'فارسی'
       );
       audit.attemptsMade = 1;
       aiResp.result.qualityAudit = audit;
@@ -2786,8 +2797,9 @@ REQUIREMENTS:
 
   // Dedicated Quality Audit Endpoint for real-time rhyme, meter & narrative analysis
   app.post('/api/audit-song', (req, res) => {
-    const { lyrics = '', genre = '', prompt = '' } = req.body || {};
-    const audit = analyzeSongQualityAudit(lyrics, genre, prompt);
+    const { lyrics = '', genre = '', prompt = '', language = 'فارسی', languages = [] } = req.body || {};
+    const auditLanguage = Array.isArray(languages) && languages.length ? languages.join(' + ') : language;
+    const audit = analyzeSongQualityAudit(lyrics, genre, prompt, auditLanguage);
     return res.json({ audit });
   });
 
