@@ -2037,11 +2037,11 @@ export function analyzeSongQualityAudit(lyrics: string, genre: string, prompt: s
 
   // 2. Structural Narrative Arc Inspection (بررسی ساختار دراماتیک و روایی ترانه متناسب با انواع ساختارها)
   const hasIntro = lyrics.includes('[Intro') || lyrics.includes('[Prologue') || lyrics.includes('[Scene 1') || lyrics.includes('[Pishdaramad');
-  const hasPart1 = lyrics.includes('[Verse 1') || lyrics.includes('[Verse') || lyrics.includes('[Act 1') || lyrics.includes('[Bars 1') || lyrics.includes('[Stanza 1') || lyrics.includes('[Band 1');
-  const hasChorus = lyrics.includes('[Chorus') || lyrics.includes('[Hook') || lyrics.includes('[Refrain') || lyrics.includes('[Tarjea') || lyrics.includes('[Tasnif');
-  const hasPart2 = lyrics.includes('[Verse 2') || lyrics.includes('[Act 2') || lyrics.includes('[Scene 2') || lyrics.includes('[Bars 17') || lyrics.includes('[Stanza 2') || lyrics.includes('[Band 2') || lyrics.includes('[Bars 9-16');
-  const hasBridgeOrClimax = lyrics.includes('[Bridge') || lyrics.includes('[Act 3') || lyrics.includes('[Guitar Solo') || lyrics.includes('[Drop') || lyrics.includes('[Climax');
-  const hasOutro = lyrics.includes('[Outro') || lyrics.includes('[Epilogue') || lyrics.includes('[Act 4') || lyrics.includes('[Forood');
+  const hasPart1 = lyrics.includes('[Verse 1') || lyrics.includes('[Verse') || lyrics.includes('[Act 1') || lyrics.includes('[Bars 1') || lyrics.includes('[Stanza 1') || lyrics.includes('[Band 1') || lyrics.includes('[Movement 1') || lyrics.includes('[Daramad');
+  const hasChorus = lyrics.includes('[Chorus') || lyrics.includes('[Hook') || lyrics.includes('[Refrain') || lyrics.includes('[Tarjea') || lyrics.includes('[Tasnif') || lyrics.includes('[Melodic Theme');
+  const hasPart2 = lyrics.includes('[Verse 2') || lyrics.includes('[Act 2') || lyrics.includes('[Scene 2') || lyrics.includes('[Bars 17') || lyrics.includes('[Stanza 2') || lyrics.includes('[Band 2') || lyrics.includes('[Bars 9-16') || lyrics.includes('[Movement 2');
+  const hasBridgeOrClimax = lyrics.includes('[Bridge') || lyrics.includes('[Act 3') || lyrics.includes('[Guitar Solo') || lyrics.includes('[Drop') || lyrics.includes('[Climax') || lyrics.includes('[Crescendo') || lyrics.includes('[Breakdown') || lyrics.includes('[Percussion Solo') || lyrics.includes('[Stanza 3') || lyrics.includes('[Stanza 4') || lyrics.includes('[Final Chorus');
+  const hasOutro = lyrics.includes('[Outro') || lyrics.includes('[Epilogue') || lyrics.includes('[Act 4') || lyrics.includes('[Forood') || lyrics.includes('[Resolution');
   const hasAtLeastFiveTags = sectionTags.length >= 5;
   const hasRequiredSunoArc = hasPart1 && hasChorus && hasPart2 && hasBridgeOrClimax && hasOutro;
 
@@ -2456,11 +2456,11 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
   * If a rhyme doesn't naturally and elegantly serve the story's meaning, REWRITE THE WHOLE LINE so that the ending rhyme word is familiar, musical, emotionally resonant, and indispensable to the thought.
   * Rhymes must feel inevitable and organic, never forced.
   * Do not include planning labels such as (A), (B), AABB, or rhyme annotations in the lyric text; only section tags belong in brackets.
-  * Keep a consistent rhyme pattern inside each stanza/couplet rather than comparing unrelated line endings across section boundaries.
-  * After drafting, read every couplet as natural Persian: reject unclear grammar, mixed metaphors with no connection, and lines whose only purpose is to match the rhyme.
-  * LANGUAGE PURITY (فارسی طبیعی و بی‌واژه‌سازی): When the requested language is Persian, write every lyric line in idiomatic, understandable Persian. Do NOT invent phonetic spellings of Hebrew, Arabic, English, or any other language; do NOT insert foreign catchphrases, transliterations, pseudo-words, or chants unless the user explicitly asks for that exact foreign-language phrase or has selected a multilingual output. Preserve real names and established loanwords only when they are contextually necessary.
-  * Every phrase must have a clear meaning a fluent Persian speaker can explain. If a word or phrase sounds impressive but has no clear meaning in context, delete it and rewrite the whole line. Do not manufacture proper nouns or slogans.
-  * Before returning JSON, perform a final native-speaker pass: read every line aloud, remove awkward word order, broken idioms, accidental foreign phrases and filler; prioritize natural spoken Persian over decorative rhyme.
+  * Keep a natural rhyme/assonance pattern appropriate to the selected language and genre; never force Persian end-rhymes onto other languages.
+  * Check grammar, idioms, spelling, pronunciation, and word choice separately in every requested language/dialect. Persian-specific literary rules apply only to Persian passages.
+  * In bilingual output, preserve every requested language and its intended script/transliteration. Hebrew words written phonetically in Persian script are valid when that is the user's chosen presentation.
+  * Every phrase must have a clear meaning in its own language and contribute to the song; avoid invented words, meaningless chants, and unrequested decorative foreign phrases.
+  * Perform a final language-by-language read-through for natural grammar, meaning, singability, and fidelity to the user's intent.
 
 ══════════════════════════════════════════════════════════════════════
 3. DIVERSE SONG STRUCTURES (تنوع غنی در ساختارهای ۱۷ گانه ترانه):
