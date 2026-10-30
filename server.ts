@@ -2545,9 +2545,20 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
 
       let aiResp: any = null;
 
-      // Prefer Cloudflare's free-tier model first; use Groq as the fallback.
-      if (effectiveCloudflareToken && effectiveCloudflareAccount) {
+      // If the user supplied a Gemini key, honor that choice first.
+      // Otherwise use the configured Cloudflare model, then Groq as fallback.
+      if (effectiveGeminiKey) {
         aiResp = await callSelectedAIProvider({
+          provider: 'gemini',
+          userApiKey: effectiveGeminiKey,
+          systemPrompt,
+          userMessage: attemptUserMsg,
+        });
+        if (!aiResp?.success && aiResp?.error) providerErrors.push(aiResp.error);
+      }
+
+      if (!aiResp?.success && effectiveCloudflareToken && effectiveCloudflareAccount) {
+        const fallback = await callSelectedAIProvider({
           provider: 'cloudflare',
           cloudflareApiToken: effectiveCloudflareToken,
           cloudflareAccountId: effectiveCloudflareAccount,
@@ -2555,8 +2566,10 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           systemPrompt,
           userMessage: attemptUserMsg,
         });
-        if (!aiResp?.success && aiResp?.error) providerErrors.push(aiResp.error);
+        if (fallback.success) aiResp = { ...fallback, warning: effectiveGeminiKey ? 'Gemini پاسخ نداد؛ تولید به مدل Cloudflare منتقل شد.' : undefined };
+        else if (fallback.error) providerErrors.push(fallback.error);
       }
+
       if (!aiResp?.success && effectiveGroqKey) {
         const fallback = await callSelectedAIProvider({
           provider: 'groq',
@@ -2564,20 +2577,31 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
           systemPrompt,
           userMessage: attemptUserMsg,
         });
-        if (fallback.success) aiResp = { ...fallback, warning: 'Cloudflare پاسخگو نبود؛ تولید به Groq منتقل شد.' };
+        if (fallback.success) aiResp = { ...fallback, warning: 'مدل‌های قبلی پاسخ ندادند؛ تولید به Groq منتقل شد.' };
         else if (fallback.error) providerErrors.push(fallback.error);
       }
 
-      // Gemini is a fallback for provider/format failures, using the user's key when configured.
-      if (!aiResp?.success && effectiveGeminiKey) {
-        const geminiFallback = await callSelectedAIProvider({
-          provider: 'gemini', userApiKey: effectiveGeminiKey, systemPrompt, userMessage: attemptUserMsg,
-        });
-        if (geminiFallback.success) aiResp = { ...geminiFallback, warning: 'تولیدکننده‌های اولیه پاسخ مناسب ندادند؛ ترانه با Gemini تولید شد.' };
-        else if (geminiFallback.error) providerErrors.push(geminiFallback.error);
-      }
-
       if (aiResp && aiResp.success && aiResp.result) {
+        // Enforce the user's selected genre in the returned metadata and Suno prompt.
+        // Some providers ignore the genre lock and silently substitute another style.
+        const requestedGenre = String(musicGenre || '').trim();
+        if (requestedGenre) {
+          aiResp.result.genre = requestedGenre;
+          const returnedMusicPrompt = String(aiResp.result.musicPrompt || '').trim();
+          const firstPromptSegment = returnedMusicPrompt.split(',')[0]?.trim() || '';
+          const startsWithRequestedGenre = returnedMusicPrompt.toLocaleLowerCase().startsWith(requestedGenre.toLocaleLowerCase());
+          if (!startsWithRequestedGenre) {
+            const remainingPrompt = returnedMusicPrompt.includes(',')
+              ? returnedMusicPrompt.slice(returnedMusicPrompt.indexOf(',') + 1).trim()
+              : returnedMusicPrompt;
+            aiResp.result.musicPrompt = remainingPrompt
+              ? `${requestedGenre}, ${remainingPrompt}`
+              : requestedGenre;
+          }
+          if (tempoBpm && !/auto|خودکار|بر اساس سبک/i.test(String(tempoBpm))) {
+            aiResp.result.tempoAndKey = `${String(tempoBpm).trim()}${aiResp.result.tempoAndKey ? `, ${aiResp.result.tempoAndKey}` : ''}`;
+          }
+        }
         lastGeneratedResult = aiResp.result;
         const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt);
         audit.attemptsMade = attemptsCount;
