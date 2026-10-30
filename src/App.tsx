@@ -353,6 +353,7 @@ export const DEFAULT_LANGUAGES = [
   'مازندرانی',
   'عربی',
   'فرانسوی',
+  'عبری',
 ];
 
 // 7. DIVERSE QUICK PROMPTS COVERING ALL GENRES
