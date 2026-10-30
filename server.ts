@@ -2588,7 +2588,6 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
         if (requestedGenre) {
           aiResp.result.genre = requestedGenre;
           const returnedMusicPrompt = String(aiResp.result.musicPrompt || '').trim();
-          const firstPromptSegment = returnedMusicPrompt.split(',')[0]?.trim() || '';
           const startsWithRequestedGenre = returnedMusicPrompt.toLocaleLowerCase().startsWith(requestedGenre.toLocaleLowerCase());
           if (!startsWithRequestedGenre) {
             const remainingPrompt = returnedMusicPrompt.includes(',')
