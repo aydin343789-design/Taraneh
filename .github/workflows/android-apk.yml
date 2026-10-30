@@ -32,6 +32,18 @@ jobs:
         run: npx cap add android
       - name: Sync Android app
         run: npx cap sync android
+      - name: Apply Persian emblem as Android launcher icon
+        run: |
+          set -e
+          SRC="src/assets/images/royal_persian_emblem_1791230254307.jpg"
+          test -s "$SRC"
+          for spec in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            density="${spec%%:*}"
+            size="${spec##*:}"
+            mkdir -p "android/app/src/main/res/mipmap-${density}"
+            convert "$SRC" -auto-orient -resize "${size}x${size}^" -gravity center -extent "${size}x${size}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+            cp "android/app/src/main/res/mipmap-${density}/ic_launcher.png" "android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
+          done
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug
       - name: Upload APK artifact
