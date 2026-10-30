@@ -2351,6 +2351,7 @@ ${song.composerNote}
               </p>
             </div>
           </div>
+          </div>
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-2">
