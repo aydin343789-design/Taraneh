@@ -1596,7 +1596,7 @@ ${song.composerNote}
 
             {/* Additional fallback providers: user-owned keys stay in this browser/device storage. */}
             <div className="p-3.5 rounded-xl bg-[#141724] border border-emerald-500/20 space-y-3">
-              <div className="flex items-center justify-between gap-2"><div className="text-xs font-bold text-emerald-300">ترتیب اتصال هوش مصنوعی: Groq سپس Cloudflare</div><span className="text-[10px] text-[#A69F91]">کلیدهای شخصی شما</span></div>
+              <div className="flex items-center justify-between gap-2"><div className="text-xs font-bold text-emerald-300">اولویت اتصال هوش مصنوعی: Gemini، سپس Cloudflare و Groq</div><span className="text-[10px] text-[#A69F91]">کلیدهای شخصی شما</span></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">کلید API سرویس Groq</label><input type="password" autoComplete="off" placeholder="gsk_..." value={groqApiKey} onChange={(e) => setGroqApiKey(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-emerald-400 font-mono" dir="ltr" /><p className="text-[10px] text-[#8E8779]">دریافت کلید: <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline font-bold">Groq Console</a> · سهمیهٔ رایگان تابع محدودیت‌های سرویس است.</p></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare Account ID</label><input type="text" autoComplete="off" placeholder="شناسه حساب Cloudflare" value={cloudflareAccountId} onChange={(e) => setCloudflareAccountId(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
               <div className="space-y-1.5"><label className="text-xs text-[#E2DDD3]">Cloudflare API Token</label><p className="text-[10px] text-[#8E8779]">دریافت توکن: <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer" className="text-orange-300 underline font-bold">Cloudflare API Tokens</a></p><input type="password" autoComplete="off" placeholder="توکن محرمانه Cloudflare" value={cloudflareApiToken} onChange={(e) => setCloudflareApiToken(e.target.value)} className="w-full h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-orange-400 font-mono" dir="ltr" /></div>
@@ -1612,7 +1612,7 @@ ${song.composerNote}
             {/* Modal Footer */}
             <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-3 flex-wrap">
               <span className="text-[11px] text-[#8E8779]">
-                کلیدها برای اتصال به Groq، Gemini و Cloudflare استفاده می‌شوند.
+                کلیدها برای اتصال به Gemini، Groq و Cloudflare استفاده می‌شوند.
               </span>
               <div className="flex items-center gap-2">
                 <button type="button" disabled={testingOpenRouter} onClick={handleTestProviders} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs">
@@ -2359,7 +2359,7 @@ ${song.composerNote}
               className={`px-2.5 py-1 sm:py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 getProviderBadge(openrouterModel).bg
               }`}
-              title="تنظیم کلیدهای Groq و Cloudflare"
+              title="تنظیم کلیدهای هوش مصنوعی"
             >
               <Cpu className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">{getProviderBadge(openrouterModel).label}</span>
