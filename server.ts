@@ -2595,25 +2595,51 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       }
 
       if (aiResp && aiResp.success && aiResp.result) {
-        // Enforce the user's selected genre in the returned metadata and Suno prompt.
-        // Some providers ignore the genre lock and silently substitute another style.
+        // Enforce the selected controls in metadata and keep the Suno prompt's genre/BPM aligned.
+        // Providers sometimes return correct lyrics but drift on metadata or tempo labels.
         const requestedGenre = String(musicGenre || '').trim();
+        let lockedMusicPrompt = String(aiResp.result.musicPrompt || '').trim();
         if (requestedGenre) {
           aiResp.result.genre = requestedGenre;
-          const returnedMusicPrompt = String(aiResp.result.musicPrompt || '').trim();
-          const startsWithRequestedGenre = returnedMusicPrompt.toLocaleLowerCase().startsWith(requestedGenre.toLocaleLowerCase());
+          const startsWithRequestedGenre = lockedMusicPrompt.toLocaleLowerCase().startsWith(requestedGenre.toLocaleLowerCase());
           if (!startsWithRequestedGenre) {
-            const remainingPrompt = returnedMusicPrompt.includes(',')
-              ? returnedMusicPrompt.slice(returnedMusicPrompt.indexOf(',') + 1).trim()
-              : returnedMusicPrompt;
-            aiResp.result.musicPrompt = remainingPrompt
-              ? `${requestedGenre}, ${remainingPrompt}`
-              : requestedGenre;
-          }
-          if (tempoBpm && !/auto|خودکار|بر اساس سبک/i.test(String(tempoBpm))) {
-            aiResp.result.tempoAndKey = `${String(tempoBpm).trim()}${aiResp.result.tempoAndKey ? `, ${aiResp.result.tempoAndKey}` : ''}`;
+            const remainingPrompt = lockedMusicPrompt.includes(',')
+              ? lockedMusicPrompt.slice(lockedMusicPrompt.indexOf(',') + 1).trim()
+              : lockedMusicPrompt;
+            lockedMusicPrompt = remainingPrompt ? `${requestedGenre}, ${remainingPrompt}` : requestedGenre;
           }
         }
+
+        const tempoText = String(tempoBpm || '').trim();
+        const tempoRange = tempoText.match(/(\d{2,3})\s*[-–]\s*(\d{2,3})\+?\s*BPM/i);
+        const exactTempo = tempoRange ? null : tempoText.match(/\b(\d{2,3})\s*BPM\b/i);
+        if (tempoRange) {
+          const minBpm = Number(tempoRange[1]);
+          const maxBpm = Number(tempoRange[2]);
+          const promptTempo = lockedMusicPrompt.match(/\b(\d{2,3})\s*BPM\b/i);
+          const proposedBpm = promptTempo ? Number(promptTempo[1]) : 0;
+          const selectedBpm = proposedBpm >= minBpm && proposedBpm <= maxBpm
+            ? proposedBpm
+            : Math.round((minBpm + maxBpm) / 2);
+          lockedMusicPrompt = promptTempo
+            ? lockedMusicPrompt.replace(promptTempo[0], `${selectedBpm} BPM`)
+            : `${lockedMusicPrompt}, ${selectedBpm} BPM`;
+          const keyAndDetails = String(aiResp.result.tempoAndKey || '').replace(/\b\d{2,3}\s*BPM\b/ig, '').replace(/^[,\s·]+/, '').trim();
+          aiResp.result.tempoAndKey = keyAndDetails ? `${selectedBpm} BPM, ${keyAndDetails}` : `${selectedBpm} BPM`;
+        } else if (exactTempo) {
+          const selectedBpm = Number(exactTempo[1]);
+          const promptTempo = lockedMusicPrompt.match(/\b\d{2,3}\s*BPM\b/i);
+          lockedMusicPrompt = promptTempo
+            ? lockedMusicPrompt.replace(promptTempo[0], `${selectedBpm} BPM`)
+            : `${lockedMusicPrompt}, ${selectedBpm} BPM`;
+          const keyAndDetails = String(aiResp.result.tempoAndKey || '').replace(/\b\d{2,3}\s*BPM\b/ig, '').replace(/^[,\s·]+/, '').trim();
+          aiResp.result.tempoAndKey = keyAndDetails ? `${selectedBpm} BPM, ${keyAndDetails}` : `${selectedBpm} BPM`;
+        }
+        aiResp.result.musicPrompt = lockedMusicPrompt;
+        aiResp.result.songType = songStructure;
+        aiResp.result.vocalType = vocalType;
+        aiResp.result.mood = mood;
+        aiResp.result.language = langString;
         lastGeneratedResult = aiResp.result;
         const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt, langString);
         audit.attemptsMade = attemptsCount;
