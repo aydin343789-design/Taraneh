@@ -965,6 +965,7 @@ ${song.composerNote}
           lyrics: manualEditState.lyrics,
           genre: manualEditState.originalSong.genre || '',
           prompt: manualEditState.title,
+          language: manualEditState.originalSong.language || 'فارسی',
         }),
       });
       const data = await res.json();
