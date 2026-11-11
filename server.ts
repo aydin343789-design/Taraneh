@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SONGWRITING_REFERENCE_GUIDE } from './songwriting-reference';
 
 dotenv.config();
 
@@ -1510,14 +1511,17 @@ async function callSelectedAIProvider(params: {
 
   // Keep prompts compact for free-tier providers: the full editorial prompt was
   // consuming most of the TPM budget before the model could write any lyrics.
-  const compactSongSystemPrompt = `You are an expert Persian lyricist, rap writer, and Suno v4 producer. Quality matters more than speed.
+  const compactSongSystemPrompt = `You are an expert multilingual lyricist, rap writer, and Suno v4 producer. Quality matters more than speed.\n${SONGWRITING_REFERENCE_GUIDE}
 OUTPUT: Return exactly one valid JSON object only (no markdown fences or commentary) with these string fields: title, language, vocalType, mood, genre, songType, poeticMeter, rhymeScheme, composerNote, lyrics, musicPrompt, tempoAndKey, instrumentation, excludeStyles.
 LYRICS QUALITY RULES:
 - Write a real SONG, not prose, slogans, a summary, or repeated generic statements. Create a clear beginning, development, turning point, and memorable ending.
 - Follow the user's exact theme, chosen genre, song structure, mood, vocalist and requested language. Do not invent a different theme or blindly praise a person/event not requested.
 - Write 24-34 meaningful lyric lines across 6-8 suitable sections. Use clear Suno section tags in English square brackets, for example [Intro: Dark Synth, Spoken Vocal], [Verse 1: Aggressive Raspy Rap], [Pre-Chorus: Rising Tension], [Chorus: Explosive Hook, Gang Vocals], [Verse 2: Double-Time Flow], [Bridge: Beat Drops, Spoken Vocal], [Final Chorus: Full Beat], [Outro: Beat Fades]. Adapt tags to the actual genre; do not copy these examples mechanically.
 - Every section must have a different job and move the story forward. The chorus must have a short, memorable, singable hook; verses need concrete details, fresh imagery, internal rhyme and natural cadence. Avoid filler, clichés, repeated lines, and rephrasing the same idea.
-- In Persian songs, ALL sung/spoken lyric lines must be natural, idiomatic Persian. Do not insert stray English, French, Turkish or other foreign words. Exceptions: English section tags in square brackets and proper names that genuinely belong in the theme. Never use a foreign word to patch a line.
+- In Persian-only songs, write natural idiomatic Persian throughout. In bilingual/multilingual songs, intentionally write every selected language in meaningful, idiomatic passages; code-switch only where musically and semantically justified. Never insert random foreign words merely to decorate or patch a rhyme. Preserve requested transliteration (including Hebrew pronunciation written in Persian script) exactly as a valid user choice.
+- For each language, use its own grammar, rhyme sounds, idiom, syllable stress and cadence. Never apply Persian-specific rhyme rules to another language.
+- Build rhyme from meaning outward: plan a thought, choose a natural sound family, read each couplet aloud, then sing it against the beat. Reject a rhyme that damages meaning, grammar, register or narrative continuity.
+- Distinguish true sound-rhyme from visual suffix similarity. Use radif, internal rhyme, assonance and multisyllabic rhyme only when they sound natural and help the song.
 - Plan a clear stanza-level rhyme scheme (such as AABB or ABAB where appropriate). Pair lines within each stanza; do not let unrelated lines accidentally define the scheme. Genuine rhyme must sound natural when spoken aloud, not merely share a few written letters.
 - Never print rhyme-analysis markers such as (A), (B), AABB, or rhyme labels inside the actual lyrics. Those are planning notes, not sung words.
 - Each couplet must make sense as a unit and connect logically or emotionally to the lines around it. Use natural Persian grammar; rewrite the whole couplet if a rhyme feels forced.
@@ -2433,7 +2437,7 @@ The user wants a brand-new, non-repetitive song composition tailored specificall
 - Do not claim automatic checks prove perfect meaning, prosody, rhyme, or native pronunciation. Create the strongest first draft; the user has the final manual-editing step.
 
 ══════════════════════════════════════════════════════════════════════
-1. STRICT ANTI-REPETITION MANDATE (پرهیز قطعی از تکرار در ترانه و پرامپت موزیک):
+REFERENCE CRAFT LIBRARY — use principles, never copy lines:\n${SONGWRITING_REFERENCE_GUIDE}\n\n1. STRICT ANTI-REPETITION MANDATE (پرهیز قطعی از تکرار در ترانه و پرامپت موزیک):
 ══════════════════════════════════════════════════════════════════════
 - NEITHER the lyrics NOR the Suno "musicPrompt" may EVER be repetitive, templated, or generic!
 - FOR SUNO V4 "musicPrompt":
@@ -2749,7 +2753,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
     }
 
     const editPrompt = `You are the multilingual master songwriter and music editor of "ترانه سرای فرخزاد" (Farrokhzad Songwriter Studio) for Suno AI (v4).
-The user wants to EDIT and REFINE an existing song according to their specific instructions.
+The user wants to EDIT and REFINE an existing song according to their specific instructions.\n\n${SONGWRITING_REFERENCE_GUIDE}
 
 Existing Song Title: "${currentSong.title}"
 Genre: "${currentSong.genre || 'آهنگ'}"
@@ -2771,7 +2775,7 @@ REQUIREMENTS:
 3. ABSOLUTE BAN ON FORCED RHYMES: Never insert random, archaic, or irrelevant words just to force a rhyme; meaning and narrative depth are paramount.
 4. DO NOT shorten the song! Maintain a rich, complete structure (at least 24 to 34 poetic lines) with authentic English section headers.
 5. STRICT ANTI-REPETITION: Keep lyrics and musicPrompt fresh, avoiding cliche repetitions or generic filler.
-6. Keep English section headers in lyrics: [Intro: ...], [Verse 1: ...], [Chorus: ...], [Verse 2: ...], [Bridge: ...], [Outro: ...].
+6. Keep English section headers in lyrics: [Intro: ...], [Verse 1: ...], [Chorus: ...], [Verse 2: ...], [Bridge: ...], [Outro: ...]. For Persian-only output use idiomatic Persian; for bilingual/multilingual output preserve all selected languages and the user's chosen script/transliteration (including Hebrew phonetics in Persian letters). Apply each language's own rhyme and stress system.
 7. Update "musicPrompt" in authentic English with surgical precision (micro-genre, acoustic space, instruments, BPM, key, audio engineering).
 8. In "composerNote", explain in Persian what poetic and narrative modifications were made.
 9. GENRE LOCK: preserve the existing song's exact primary genre. Do not switch between electronic/house/techno and rap/boom-bap, rock, orchestral, or any other unrelated style. Only add compatible subgenres; the musicPrompt must begin by naming the existing song's primary genre.
