@@ -285,6 +285,13 @@ export const GENRE_OPTIONS = [
     icon: Layers,
     color: 'from-indigo-500/20 to-cyan-500/20 text-indigo-400 border-indigo-500/40',
   },
+  { id: 'synthwave', label: 'سینث‌ویو و رترو دهه ۸۰ (Synthwave & Retrowave)', short: 'سینث‌ویو رترو', desc: 'سینت آنالوگ، درامز الکترونیک دهه هشتاد، بیس پالس و فضای نئونی سینمایی', icon: Radio, color: 'from-fuchsia-500/20 to-purple-500/20 text-fuchsia-300 border-fuchsia-500/40' },
+  { id: 'blues_soul', label: 'بلوز و سول ریشه‌دار (Blues & Soul)', short: 'بلوز و سول', desc: 'گیتار بلوز، هَموند ارگ، وکال پرحس و گروو زنده', icon: Heart, color: 'from-orange-500/20 to-amber-500/20 text-orange-300 border-orange-500/40' },
+  { id: 'reggae_ska', label: 'رگه و اسکا (Reggae & Ska)', short: 'رگه و اسکا', desc: 'آف‌بیت گیتار، بیس ریشه‌دار، ارگ و ریتم سبک و رقصان', icon: Compass, color: 'from-lime-500/20 to-green-500/20 text-lime-300 border-lime-500/40' },
+  { id: 'jazz_swing', label: 'جز سوینگ و بیگ‌بند (Jazz Swing & Big Band)', short: 'جز سوینگ', desc: 'پیانو آکوستیک، کنترباس، برنجی‌های گروهی و ریتم سوینگ', icon: Music, color: 'from-amber-500/20 to-yellow-500/20 text-amber-300 border-amber-500/40' },
+  { id: 'latin', label: 'لاتین، سالسا و باچاتا (Latin, Salsa & Bachata)', short: 'لاتین و سالسا', desc: 'پرکاشن لاتین، گیتار ریتمیک، پیانو مونتونو و انرژی رقص', icon: Disc, color: 'from-rose-500/20 to-orange-500/20 text-rose-300 border-rose-500/40' },
+  { id: 'gospel_choir', label: 'گاسپل و کرال روحانی (Gospel & Choir)', short: 'گاسپل و کرال', desc: 'پیانو، ارگ، دست‌زدن گروهی و کرال چندلایه با اوج احساسی', icon: Sparkles, color: 'from-sky-500/20 to-indigo-500/20 text-sky-300 border-sky-500/40' },
+  { id: 'cinematic_ambient', label: 'امبینت و موسیقی متن سینمایی (Ambient & Film Score)', short: 'امبینت سینمایی', desc: 'بافت‌های محیطی، پیانو مینیمال، زهی‌های کشیده و طراحی صدای تصویری', icon: Layers, color: 'from-slate-500/20 to-cyan-500/20 text-slate-300 border-slate-500/40' },
 ];
 
 // 2. SONG STRUCTURES
@@ -306,6 +313,13 @@ export const SONG_TYPE_OPTIONS = [
   { id: 'acoustic_unplugged', label: 'آکوستیک آنپلاگد صمیمی گیتار/پیانو (Intimate Acoustic Unplugged & Spoken Word)', short: 'آکوستیک آنپلاگد صمیمی' },
   { id: 'diss_protest', label: 'دیس ترک و تکست اعتراضی طوفانی (Diss Track / Protest)', short: 'دیس ترک / اعتراضی' },
   { id: 'short_viral', label: 'ترانه کوتاه با هوک ویرال (Short Viral Hook)', short: 'هوک کوتاه ویرال' },
+  { id: 'prechorus_hook', label: 'ورس، پری‌کورس و کورس انفجاری (Verse–Pre-Chorus–Chorus)', short: 'پری‌کورس و کورس انفجاری' },
+  { id: 'call_response', label: 'پرسش و پاسخ گروهی و هم‌خوانی (Call & Response)', short: 'پرسش و پاسخ گروهی' },
+  { id: 'duet_dialogue', label: 'ترانه دوصدایی به شکل گفت‌وگوی عاشقانه (Dialogue Duet)', short: 'دوئت گفت‌وگومحور' },
+  { id: 'concept_suite', label: 'سوئیت مفهومی چندبخشی (Concept Suite / Movements)', short: 'سوئیت مفهومی چندبخشی' },
+  { id: 'blues_verse', label: 'بلوز دوازده‌میزانی با روایت و پاسخ آوازی (12-Bar Blues)', short: 'بلوز دوازده‌میزانی' },
+  { id: 'musical_theatre', label: 'ترانه نمایشی با شخصیت و دیالوگ (Musical Theatre)', short: 'ترانه نمایشی و دیالوگی' },
+  { id: 'spoken_sung', label: 'ترکیب خواندن ملودیک و رپ (Sung-Rap Hybrid)', short: 'ترکیب آواز و رپ' },
 ];
 
 // 3. TEMPO / BPM
@@ -314,6 +328,12 @@ export const TEMPO_OPTIONS = [
   { id: 'slow', label: 'آرام و اسلو (65-85 BPM)', short: 'آرام (65-85 BPM)' },
   { id: 'mid', label: 'متوسط و ریتمیک (90-115 BPM)', short: 'متوسط (90-115 BPM)' },
   { id: 'fast', label: 'تند و پرحرارت (120-145+ BPM)', short: 'تند (120-145+ BPM)' },
+  { id: 'very_slow', label: 'بسیار آرام و خلوت (50-65 BPM)', short: 'بسیار آرام (50-65 BPM)' },
+  { id: 'slow_groove', label: 'اسلو گروو و سول (70-90 BPM)', short: 'اسلو گروو (70-90 BPM)' },
+  { id: 'groove', label: 'گروو متوسط و رقصان (100-120 BPM)', short: 'گروو (100-120 BPM)' },
+  { id: 'upbeat', label: 'آپ‌بیت و پرتحرک (125-140 BPM)', short: 'آپ‌بیت (125-140 BPM)' },
+  { id: 'club_fast', label: 'کلاب و تکنو سریع (140-160 BPM)', short: 'کلاب سریع (140-160 BPM)' },
+  { id: 'triple_meter', label: 'ریتم سه‌ضربی و والس (3/4 or 6/8)', short: 'سه‌ضربی / والس' },
 ];
 
 // 4. MOOD OPTIONS
@@ -332,6 +352,12 @@ export const MOOD_OPTIONS = [
   { id: 'تعلیق_سینمایی', label: 'دلهره‌آور، سینمایی و تعلیق‌برانگیز (Cinematic Thriller & Suspenseful)', short: 'دلهره‌آور و تعلیق' },
   { id: 'سوررئال', label: 'سوررئال، رویاگونه و اثیری (Dreamy, Psychedelic & Surreal Ethereal)', short: 'سوررئال و رویاگونه' },
   { id: 'آرامش‌بخش', label: 'آرامش‌بخش، ملو و شبانه (Nocturnal Chill, Mellow & Ambient Peace)', short: 'آرامش‌بخش و شبانه' },
+  { id: 'طنز', label: 'طنزآمیز، کنایه‌دار و بازیگوش (Witty & Satirical)', short: 'طنز و کنایه' },
+  { id: 'مرموز', label: 'مرموز، رازآلود و سایه‌روشن (Mysterious & Enigmatic)', short: 'مرموز و رازآلود' },
+  { id: 'امیدوار', label: 'امیدوار، روشن و رو به آینده (Hopeful & Uplifting)', short: 'امیدوار و روشن' },
+  { id: 'نوآر', label: 'نوآر، تلخ و شهری (Noir & Urban)', short: 'نوآر شهری' },
+  { id: 'شورانگیز', label: 'شورانگیز، پرشکوه و پیروزمند (Triumphant & Exultant)', short: 'شورانگیز و پیروزمند' },
+  { id: 'حسرت', label: 'حسرت، پشیمانی و اعتراف صادقانه (Regret & Confession)', short: 'حسرت و اعتراف' },
 ];
 
 // 5. VOCALS
@@ -339,6 +365,10 @@ export const VOCAL_OPTIONS = [
   { id: 'مرد', label: 'با صدای مرد (Male Solo)', short: 'صدای مرد' },
   { id: 'زن', label: 'با صدای زن (Female Solo)', short: 'صدای زن' },
   { id: 'زن و مرد', label: 'دو صدایی زن و مرد (Duet)', short: 'زن و مرد (دو صدایی)' },
+  { id: 'کر مردانه', label: 'خواننده مرد با گروه کر مردانه (Male Lead & Male Choir)', short: 'مرد و کر مردانه' },
+  { id: 'کر زنانه', label: 'خواننده زن با گروه کر زنانه (Female Lead & Female Choir)', short: 'زن و کر زنانه' },
+  { id: 'گروه کر', label: 'اجرای گروهی و چندصدایی (Ensemble & Choir)', short: 'گروه کر چندصدایی' },
+  { id: 'روایت و آواز', label: 'راوی همراه با خواننده (Narrator & Singer)', short: 'راوی و خواننده' },
 ];
 
 // 6. LANGUAGES
@@ -581,6 +611,7 @@ export default function App() {
   const [showOptionsBar, setShowOptionsBar] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copiedMap, setCopiedMap] = useState<{ [key: string]: boolean }>({});
+  const [savedStatusMap, setSavedStatusMap] = useState<{ [key: string]: 'saved' | 'error' }>({});
 
   // Auto-retry Notification State (وضعیت بازتلاش خودکار با مدل پایدار جایگزین)
   const [retryNotification, setRetryNotification] = useState<string | null>(null);
@@ -650,44 +681,73 @@ export default function App() {
     scrollToBottom();
   }, [activeSession?.messages, isLoading]);
 
-  // Automatically save or bookmark song into persistent History archive
+  // Persist the complete song object immediately, not only after a later React effect.
   const saveSongToHistory = (
     song: SongGenerationResult,
     source?: string,
     actionTrigger: 'copy_lyrics' | 'copy_prompt' | 'download' | 'manual' = 'manual'
-  ) => {
-    setSavedSongs((prev) => {
-      // Check if song with identical title and lyrics already exists
-      const existingIndex = prev.findIndex(
-        (s) => s.title === song.title && s.songResult.lyrics === song.lyrics
-      );
-      const timeStr = new Date().toLocaleDateString('fa-IR', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+  ): boolean => {
+    const timeStr = new Date().toLocaleString('fa-IR', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    let current: SavedSong[] = savedSongs;
+    try {
+      const raw = localStorage.getItem(SAVED_SONGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) current = parsed;
+      }
+    } catch {
+      // Continue with the in-memory archive if stored JSON is damaged or unavailable.
+    }
 
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
+    const existingIndex = current.findIndex((entry) =>
+      entry.title === (song.title || 'ترانه بدون عنوان') &&
+      entry.songResult?.lyrics === song.lyrics &&
+      entry.songResult?.musicPrompt === song.musicPrompt
+    );
+    const entry: SavedSong = existingIndex >= 0
+      ? {
+          ...current[existingIndex],
+          title: song.title || 'ترانه بدون عنوان',
+          songResult: { ...song },
           savedAt: timeStr,
+          source: source || current[existingIndex].source || 'manual',
+          actionTrigger,
+        }
+      : {
+          id: `saved-song-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+          title: song.title || 'ترانه بدون عنوان',
+          songResult: { ...song },
+          savedAt: timeStr,
+          source: source || 'manual',
           actionTrigger,
         };
-        return updated;
-      }
 
-      const newEntry: SavedSong = {
-        id: `saved-song-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        title: song.title || 'ترانه بدون عنوان',
-        songResult: song,
-        savedAt: timeStr,
-        source: source || 'openrouter',
-        actionTrigger,
-      };
-      return [newEntry, ...prev];
-    });
+    const next = existingIndex >= 0
+      ? current.map((item, index) => index === existingIndex ? entry : item)
+      : [entry, ...current];
+    const bounded = next.slice(0, 100);
+
+    try {
+      localStorage.setItem(SAVED_SONGS_KEY, JSON.stringify(bounded));
+      setSavedSongs(bounded);
+      return true;
+    } catch {
+      // If the archive is near the browser quota, keep the newest 30 complete songs.
+      try {
+        const compact = bounded.slice(0, 30);
+        localStorage.setItem(SAVED_SONGS_KEY, JSON.stringify(compact));
+        setSavedSongs(compact);
+        return true;
+      } catch {
+        setSavedSongs(bounded);
+        return false;
+      }
+    }
   };
 
   const copyToClipboard = (text: string, id: string, songToSave?: SongGenerationResult, isPrompt?: boolean) => {
@@ -2664,6 +2724,18 @@ ${song.composerNote}
                         >
                           <RefreshCw className="w-3.5 h-3.5 text-[#D4AF37]" />
                           <span className="hidden sm:inline">نسخه دیگر</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ok = saveSongToHistory(res, msg.source, 'manual');
+                            setSavedStatusMap((prev) => ({ ...prev, [msg.id]: ok ? 'saved' : 'error' }));
+                          }}
+                          title="ذخیره یک‌جای ترانه، پرامپت و همه مشخصات در آرشیو همین دستگاه"
+                          className={`px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${savedStatusMap[msg.id] === 'saved' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : savedStatusMap[msg.id] === 'error' ? 'bg-rose-500/15 border-rose-500/40 text-rose-300' : 'bg-[#181C2A] hover:bg-[#22273B] border-[#D4AF37]/50 text-[#D4AF37]'}`}
+                        >
+                          {savedStatusMap[msg.id] === 'saved' ? <CheckCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+                          <span>{savedStatusMap[msg.id] === 'saved' ? 'ذخیره شد' : savedStatusMap[msg.id] === 'error' ? 'خطا در ذخیره' : 'ذخیره ترانه'}</span>
                         </button>
                         <button
                           type="button"
