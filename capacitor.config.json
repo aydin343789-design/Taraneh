@@ -1,0 +1,8 @@
+{
+  "appId": "com.farrokhzad.taraneh",
+  "appName": "ترانه‌سرای فرخزاد",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}

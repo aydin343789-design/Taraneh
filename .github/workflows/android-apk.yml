@@ -1,0 +1,73 @@
+name: Build Android APK
+on:
+  push:
+    branches:
+      - feature/gemini-groq-cloudflare-fallback
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: npm install
+      - name: Build web app
+        run: npm run build
+      - name: Add Android platform
+        run: npx cap add android
+      - name: Sync Android app
+        run: npx cap sync android
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+      - name: Apply Persian emblem as Android launcher icon
+        run: |
+          set -e
+          SRC="src/assets/images/royal_persian_emblem_1791230254307.jpg"
+          test -s "$SRC"
+          for spec in "mdpi:48:108:66" "hdpi:72:162:99" "xhdpi:96:216:132" "xxhdpi:144:324:198" "xxxhdpi:192:432:264"; do
+            density="${spec%%:*}"
+            rest="${spec#*:}"
+            size="${rest%%:*}"
+            rest="${rest#*:}"
+            canvas="${rest%%:*}"
+            foreground="${rest##*:}"
+            dir="android/app/src/main/res/mipmap-${density}"
+            mkdir -p "$dir"
+            convert "$SRC" -auto-orient -resize "${size}x${size}^" -gravity center -extent "${size}x${size}" "$dir/ic_launcher.png"
+            cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png"
+            convert "$SRC" -auto-orient -resize "${foreground}x${foreground}" -gravity center -background none -extent "${canvas}x${canvas}" "$dir/ic_launcher_foreground.png"
+          done
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@android:color/black"/>
+            <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: taraneh-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
