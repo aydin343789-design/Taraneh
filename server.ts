@@ -2467,7 +2467,7 @@ REFERENCE CRAFT LIBRARY — use principles, never copy lines:\n${SONGWRITING_REF
   * Perform a final language-by-language read-through for natural grammar, meaning, singability, and fidelity to the user's intent.
 
 ══════════════════════════════════════════════════════════════════════
-3. DIVERSE SONG STRUCTURES (تنوع غنی در ساختارهای ۱۷ گانه ترانه):
+3. DIVERSE SONG STRUCTURES (تنوع ساختارهای ترانه):
 ══════════════════════════════════════════════════════════════════════
 You must adapt your section headers (always in English in brackets) to the user's selected structure ("${songStructure}"):
 - If Epic 4-Act Storytelling (شاهکار روایی داستانی ۴ پرده‌ای):
@@ -2490,8 +2490,15 @@ You must adapt your section headers (always in English in brackets) to the user'
   [Intro: Fingerpicked Nylon Guitar & Room Tone], [Verse 1: Raw Close-Mic Vocals], [Chorus: Warm Melodic Resonance], [Verse 2: Added Woodwinds], [Bridge: Intimate Whispered Thought], [Outro: Fading Guitar Harmonics]
 - If Traditional Dastgah (سنتی دستگاهی):
   [Pishdaramad: Mystic Setar & Ney], [Avaz / Daramad: Classical Tahrir Vocal], [Tasnif: Band 1], [Chorus / Tarjea], [Tasnif: Band 2], [Forood / Outro]
+- Dialogue Duet (دوئت گفت‌وگومحور): alternate clearly labeled [Male], [Female] or requested singer roles; let the voices answer one another and meet in the chorus.
+- Call & Response (پرسش و پاسخ): alternate short lead phrases and group replies; make the response memorable and easy to sing.
+- Concept Suite / Movements (سوئیت مفهومی): use distinct movements with musical transitions and a continuous story arc rather than repeating verse/chorus mechanically.
+- 12-Bar Blues: use three-line blues stanzas with AAB logic, a natural repeated opening line and a meaningful resolving line.
+- Musical Theatre (ترانه نمایشی): write character-driven dialogue and dramatic changes of intention; keep spoken lines distinct from sung hooks.
+- Sung-Rap Hybrid: alternate melodic hooks with rhythmically dense rap verses; align syllable density with the chosen BPM.
+- Verse–Pre-Chorus–Chorus: build tension in the pre-chorus and release it in a short, memorable chorus.
 - Default / Standard:
-  [Intro: English tag], [Verse 1: English vocal tag], [Chorus: English tag], [Verse 2: English vocal tag], [Bridge: English tag], [Final Chorus: English tag], [Outro: English tag]
+  [Intro: English tag], [Verse 1: English vocal tag], [Pre-Chorus: Rising Tension], [Chorus: English tag], [Verse 2: English vocal tag], [Bridge: English tag], [Final Chorus: English tag], [Outro: English tag]
 
 ══════════════════════════════════════════════════════════════════════
 4. DIVERSE MOODS & EMOTIONAL DEPTH (تنوع شگفت‌انگیز در حس و اتمسفر):
