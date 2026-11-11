@@ -751,14 +751,45 @@ export default function App() {
   };
 
   const copyToClipboard = (text: string, id: string, songToSave?: SongGenerationResult, isPrompt?: boolean) => {
-    navigator.clipboard.writeText(text);
-    setCopiedMap((prev) => ({ ...prev, [id]: true }));
+    const markCopied = () => {
+      setCopiedMap((prev) => ({ ...prev, [id]: true }));
+      setTimeout(() => setCopiedMap((prev) => ({ ...prev, [id]: false })), 2500);
+    };
+    const fallbackCopy = (): boolean => {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        const copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (copied) markCopied();
+        return copied;
+      } catch {
+        return false;
+      }
+    };
+
+    // Android WebView and non-HTTPS browser contexts may not expose Clipboard API.
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopy());
+      } else {
+        fallbackCopy();
+      }
+    } catch {
+      fallbackCopy();
+    }
+
+    // Archive the complete song even when clipboard access is unavailable.
     if (songToSave) {
       saveSongToHistory(songToSave, undefined, isPrompt ? 'copy_prompt' : 'copy_lyrics');
     }
-    setTimeout(() => {
-      setCopiedMap((prev) => ({ ...prev, [id]: false }));
-    }, 2500);
   };
 
   const handleSaveOpenRouterConfig = (keyInput?: string, modelInput?: string) => {
