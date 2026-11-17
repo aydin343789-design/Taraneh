@@ -42,9 +42,17 @@ import {
   Edit3,
   Wand2,
   Save,
-  Award
+  Award,
+  BookOpen,
+  Search,
+  Zap,
+  Cloud,
+  Guitar,
+  Sliders,
+  Volume2
 } from 'lucide-react';
 import { SongGenerationResult, SongQualityAudit } from '../server';
+import { PERSIAN_SONGBOOK, SongbookEntry } from './data/persianSongbook';
 
 interface ChatMessage {
   id: string;
@@ -75,89 +83,14 @@ export interface SavedSong {
   actionTrigger?: 'copy_lyrics' | 'copy_prompt' | 'download' | 'manual';
 }
 
-export interface OpenRouterModelPreset {
-  id: string;
-  name: string;
-  desc: string;
-  badge: string;
-  isFree: boolean;
-}
-
-export const OPENROUTER_FREE_MODELS: OpenRouterModelPreset[] = [
-  {
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
-    name: 'متا لاما ۳.۳ ۷۰B (رایگان)',
-    desc: 'مدل پرقدرت متا با تسلط عالی بر وزن، قافیه، پایداری بالا و ادبیات فارسی',
-    badge: 'پیشنهادی · پایدارترین',
-    isFree: true,
-  },
-  {
-    id: 'google/gemma-2-9b-it:free',
-    name: 'گوگل گما ۲ ۹B (رایگان)',
-    desc: 'مدل پرسرعت و پایدار گوگل برای سرایش شعر و پرامپت‌نویسی سونو',
-    badge: 'پرسرعت · رایگان',
-    isFree: true,
-  },
-  {
-    id: 'minimax/minimax-m3.1-flash:free',
-    name: 'مینی‌مکس M3.1 فلش (رایگان)',
-    desc: 'مدل چابک و باهوش با درک غنی از صنایع ادبی و داستان‌سرایی',
-    badge: 'جدید · رایگان',
-    isFree: true,
-  },
-  {
-    id: 'deepseek/deepseek-r1:free',
-    name: 'دیپ‌سیک R1 (رایگان)',
-    desc: 'تفکر عمیق و استدلال شاعرانه شاهکار و بسیار باهوش',
-    badge: 'استدلال عمیق',
-    isFree: true,
-  },
-  {
-    id: 'mistralai/mistral-small-3.2-24b-instruct:free',
-    name: 'میسترال ۲۴B (رایگان)',
-    desc: 'مدل سبک و دقیق در ترانه‌سرایی و ریتم کلامی',
-    badge: 'سبک · رایگان',
-    isFree: true,
-  },
-  {
-    id: 'deepseek/deepseek-chat:free',
-    name: 'دیپ‌سیک چت V3 (رایگان)',
-    desc: 'مدل گفتگومحور و ترانه‌سرایی روان و پیوسته',
-    badge: 'رایگان',
-    isFree: true,
-  },
-];
-
-export const OPENROUTER_POPULAR_MODELS: OpenRouterModelPreset[] = [
-  {
-    id: 'qwen/qwen-2.5-72b-instruct',
-    name: 'Qwen 2.5 72B Instruct',
-    desc: 'سلطان شعر فارسی، وزن‌های عروضی و استعاره‌ها',
-    badge: 'تخصصی شعر فارسی',
-    isFree: false,
-  },
-  {
-    id: 'openai/gpt-4o-mini',
-    name: 'OpenAI GPT-4o Mini',
-    desc: 'هوش مصنوعی سریع و پایدار از OpenAI',
-    badge: 'پایدار',
-    isFree: false,
-  },
-  {
-    id: 'anthropic/claude-3.5-sonnet',
-    name: 'Claude 3.5 Sonnet',
-    desc: 'قوی‌ترین هوش مصنوعی در درک ظرایف و استعاره‌ها',
-    badge: 'کیفیت اعلا',
-    isFree: false,
-  },
-];
 
 const STORAGE_KEY = 'chakameh_chatbot_sessions_v6';
 const SAVED_SONGS_KEY = 'chakameh_saved_library_songs_v1';
-const OPENROUTER_KEY_STORAGE = 'chakameh_openrouter_api_key_v1';
-const OPENROUTER_MODEL_STORAGE = 'chakameh_openrouter_model_v1';
 
-// 1. DIVERSE GENRES & STYLES (شامل انواع سبک‌های رپ و موسیقی بدون تکرار)
+
+
+
+// 1. DIVERSE GENRES & STYLES (تنوع گسترده در ۲۶ سبک بدون تکرار)
 export const GENRE_OPTIONS = [
   {
     id: 'rap_boombap',
@@ -193,7 +126,7 @@ export const GENRE_OPTIONS = [
   },
   {
     id: 'hardcore_rap',
-    label: 'رپ هاردکور خیابانی (Hardcore Street Rap)',
+    label: 'رپ هاردکور خیابانی و اعتراضی (Hardcore Street Rap)',
     short: 'رپ هاردکور خیابانی',
     desc: 'بیس فوق‌سنگین دیستورت، انرژی اعتراضی انفجاری، ریف‌های الکتریک و دلیوری تند',
     icon: Flame,
@@ -219,25 +152,65 @@ export const GENRE_OPTIONS = [
     id: 'pop',
     label: 'پاپ مدرن و رادیویی (Modern Pop)',
     short: 'پاپ مدرن',
-    desc: 'ملودی‌های جذاب، هوک گیرا، درامز مدرن و پروداکشن پولیش‌شده',
+    desc: 'ملودی‌های جذاب، هوک گیرا، درامز مدرن و پروداکشن پولیش‌شده تجاری',
     icon: Radio,
     color: 'from-pink-500/20 to-purple-500/20 text-pink-400 border-pink-500/40',
+  },
+  {
+    id: 'pop_golden_era',
+    label: 'پاپ طلایی دهه ۵۰ و ۶۰ (Golden Era Persian Pop)',
+    short: 'پاپ کلاسیک ارکسترال',
+    desc: 'مکتب واروژان و بابک بیات، ارکستر زهی بزرگ، پیانو آکوستیک، گیتار نایلون و هارمونی‌های عمیق',
+    icon: Disc,
+    color: 'from-amber-500/20 to-yellow-600/20 text-amber-300 border-amber-500/40',
+  },
+  {
+    id: 'indie_dream_pop',
+    label: 'ایندی پاپ و دریم پاپ رویایی (Indie & Dream Pop)',
+    short: 'ایندی و دریم پاپ',
+    desc: 'فضای رویاگونه، ریورب‌های شناور، گیتار کورس‌دار، سینت پد اثیری و خوانش زمزمه‌وار',
+    icon: Sparkles,
+    color: 'from-teal-500/20 to-cyan-500/20 text-teal-300 border-teal-500/40',
   },
   {
     id: 'sonati',
     label: 'سنتی و دستگاهی اصیل (Traditional Sonati)',
     short: 'سنتی اصیل',
-    desc: 'دستگاه‌های شور، همایون، اصفهان با تار، سه‌تار، نی، تنبک و تحریر',
+    desc: 'دستگاه‌های شور، همایون، اصفهان با تار، سه‌تار، نی، تنبک و تحریرهای چپ‌کوک',
     icon: Sparkles,
     color: 'from-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/40',
   },
   {
+    id: 'mystic_sufi',
+    label: 'تصنیف و سماع عرفانی صوفیانه (Mystic Sufi & Sama)',
+    short: 'عرفانی و سماع',
+    desc: 'دف‌های رعدآسا، تنبور و سه‌تار شورانگیز، ذکر و خلسه روحانی مولانا و عطار',
+    icon: Flame,
+    color: 'from-amber-600/20 to-yellow-500/20 text-yellow-300 border-yellow-500/40',
+  },
+  {
     id: 'rock',
-    label: 'راک و متال (Rock & Metal)',
-    short: 'راک و متال',
-    desc: 'گیتار الکتریک دیستورشن، درامز زنده، سولو آتشین و بیس کوبنده',
+    label: 'راک کلاسیک و آلترناتیو (Alternative Rock & Indie)',
+    short: 'راک و آلترناتیو',
+    desc: 'گیتار الکتریک اوردرایو، بیس درایوینگ، درامز زنده، سولو احساسی و آواز طغیانگر',
     icon: Disc,
     color: 'from-red-600/20 to-purple-600/20 text-red-400 border-red-500/40',
+  },
+  {
+    id: 'metal_hardrock',
+    label: 'هارد راک و هوی متال (Hard Rock & Heavy Metal)',
+    short: 'هارد راک و متال',
+    desc: 'دبل‌بیس درامز سرعتی، ریف‌های دیستورت سنگین، سولوهای شرد و وکال پرخروش',
+    icon: Flame,
+    color: 'from-zinc-600/20 to-red-900/20 text-red-300 border-red-600/40',
+  },
+  {
+    id: 'prog_rock',
+    label: 'پروگرسیو راک مفهومی (Concept Progressive Rock)',
+    short: 'پروگرسیو راک',
+    desc: 'تغییر کسر میزان، سولوهای فضایی، داستانی چندپرده‌ای و ارنج ارکسترال شبیه پینک فلوید',
+    icon: Layers,
+    color: 'from-indigo-600/20 to-purple-600/20 text-indigo-300 border-indigo-500/40',
   },
   {
     id: 'electronic',
@@ -248,69 +221,168 @@ export const GENRE_OPTIONS = [
     color: 'from-cyan-500/20 to-blue-500/20 text-cyan-400 border-cyan-500/40',
   },
   {
+    id: 'synthwave_80s',
+    label: 'سینت‌ویو و رترو ۸۰s (Synthwave & Retro 80s)',
+    short: 'سینت‌ویو و رترو ۸۰s',
+    desc: 'درام ماشین لین‌درام، بیس آرپژیو نئونی، سینت‌های نوستالژیک دهه ۸۰ و رانندگی شبانه',
+    icon: Radio,
+    color: 'from-fuchsia-600/20 to-pink-500/20 text-fuchsia-300 border-fuchsia-500/40',
+  },
+  {
+    id: 'ambient_chill',
+    label: 'امبینت و چیل‌اوت مراقبه‌ای (Ambient & Chillout)',
+    short: 'امبینت و مراقبه',
+    desc: 'بافت‌های صوتی بیکران، پیانو سلو در باران، دودوک، بدون درامز سنگین، آرامش محض',
+    icon: Coffee,
+    color: 'from-sky-600/20 to-indigo-600/20 text-sky-300 border-sky-500/40',
+  },
+  {
     id: 'rnb_soul',
-    label: 'آر اند بی و نئو سول (R&B & Neo-Soul)',
+    label: 'آر اند بی، نئو سول و فانک (R&B, Neo-Soul & Funk)',
     short: 'آر اند بی و سول',
-    desc: 'پیانو الکتریک فندر رودز، ساکسوفون مخملی، بیس گرم و فضای شبانه',
+    desc: 'پیانو الکتریک فندر رودز، ساکسوفون مخملی، بیس گرم، وکال رانز و فضای شبانه',
     icon: Heart,
     color: 'from-violet-500/20 to-indigo-500/20 text-violet-400 border-violet-500/40',
+  },
+  {
+    id: 'jazz_blues',
+    label: 'جاز و بلوز شبانه نوآر (Midnight Jazz & Blues)',
+    short: 'جاز و بلوز شبانه',
+    desc: 'ترومپت میوت‌دار، پیانو جز سوئینگ، کنترباس آکوستیک، گیتار بلوز و حس تنهایی بارانی',
+    icon: Coffee,
+    color: 'from-amber-700/20 to-yellow-700/20 text-amber-200 border-amber-600/40',
   },
   {
     id: 'epic_orchestral',
     label: 'حماسی و سینمایی سمفونیک (Cinematic Epic)',
     short: 'حماسی و سینمایی',
-    desc: 'ارکستر سمفونیک ۹۰ نفره، طبل‌های جنگی، کُرال باشکوه و شیپورهای پیروزی',
+    desc: 'ارکستر سمفونیک ۹۰ نفره، طبل‌های جنگی، کُرال باشکوه و شیپورهای پیروزی و شکوه تمدن',
     icon: Shield,
     color: 'from-yellow-500/20 to-amber-500/20 text-yellow-400 border-yellow-500/40',
   },
   {
+    id: 'dark_cinematic',
+    label: 'ساندترک دارک تریلر و تعلیق (Dark Cinematic Thriller)',
+    short: 'ساندترک دارک تریلر',
+    desc: 'سازهای زهی کشیده دلهره‌آور، براس‌های هولناک Hans Zimmer، تیک‌تاک ساعت و تعلیق',
+    icon: Shield,
+    color: 'from-stone-600/20 to-zinc-900/40 text-stone-300 border-stone-500/40',
+  },
+  {
+    id: 'bandari_6_8',
+    label: 'شاد بندری ۶/۸ و موسیقی جنوب (Bandari 6/8 & Southern Folk)',
+    short: 'شاد بندری ۶/۸',
+    desc: 'ریتم ۶/۸ رقصان، نی‌انبان بوشهری، دمام و کسر، دست‌افشانی و پایکوبی پرانرژی ساحلی',
+    icon: Sparkles,
+    color: 'from-emerald-500/20 to-green-500/20 text-emerald-300 border-emerald-500/40',
+  },
+  {
     id: 'folk_regional',
-    label: 'فولکلور و موسیقی نواحی (Folkloric & Regional)',
-    short: 'فولکلور و نواحی',
-    desc: 'بندری شاد ۶/۸، لری، کردی پرشور، گیلکی بارانی و آذری',
+    label: 'فولکلور اقوام ایران - کردی، لری، آذری و گیلکی (Regional Folkloric)',
+    short: 'فولکلور اقوام ایران',
+    desc: 'نغمه‌های کردی پرشور (هلپرکه)، کمانچه لری، سرنا، دایره گیلکی و بالابان آذری',
     icon: Compass,
     color: 'from-green-500/20 to-lime-500/20 text-lime-400 border-lime-500/40',
   },
   {
+    id: 'flamenco_latin',
+    label: 'فلامنکو و لاتین فیوژن (Flamenco & Latin Fusion)',
+    short: 'فلامنکو و لاتین',
+    desc: 'گیتار نایلون اسپانیایی، کف زدن‌های ریتمیک (پالماس)، کاخن، آکاردئون و شور کولی‌وار',
+    icon: Flame,
+    color: 'from-rose-600/20 to-orange-500/20 text-rose-300 border-rose-500/40',
+  },
+  {
     id: 'fusion',
-    label: 'تلفیقی و فیوژن جهانی (World & Fusion)',
-    short: 'تلفیقی و فیوژن',
-    desc: 'پیوند سازهای غربی و شرقی، تار الکتریک با درامز و کرال چندزبانه',
+    label: 'تلفیقی و ورلد فیوژن جهانی (World & Global Fusion)',
+    short: 'تلفیقی و ورلد فیوژن',
+    desc: 'پیوند سازهای غربی و شرقی، تار الکتریک با درامز و کرال چندزبانه و ریتم مدرن',
     icon: Layers,
     color: 'from-indigo-500/20 to-cyan-500/20 text-indigo-400 border-indigo-500/40',
   },
 ];
 
-// 2. SONG STRUCTURES
+// 2. SONG STRUCTURES (تنوع گسترده در ۲۲ ساختار ترانه‌سرایی)
 export const SONG_TYPE_OPTIONS = [
-  { id: 'storytelling_epic', label: 'شاهکار روایی داستانی ۴ پرده‌ای (Four-Act Narrative Storytelling: Prologue, Rising Tension, Climax, Resolution)', short: 'روایی داستانی ۴ پرده‌ای' },
+  { id: 'storytelling_epic', label: 'شاهکار روایی داستانی ۴ پرده‌ای (Four-Act Narrative: Prologue, Rising Tension, Climax, Resolution)', short: 'روایی داستانی ۴ پرده‌ای' },
   { id: 'full_song', label: 'ترانه کامل با ورس، کورس و بریج (Full Song: Verse-Chorus-Bridge)', short: 'ترانه کامل استاندارد' },
+  { id: 'radio_pop_prechorus', label: 'ساختار پاپ با پری‌کورس و پست‌کورس (Verse-PreChorus-Chorus-PostChorus-Bridge)', short: 'پاپ با پری‌کورس و پست‌کورس' },
   { id: 'rap_storytelling', label: 'رپ داستانی سناریومحور ۳۲ باری (Narrative Storytelling Rap / 32 Bars Cinematic)', short: 'رپ داستانی سناریومحور' },
   { id: 'rap_bars', label: 'تکست رپ چند ورس با هوک و پانچ‌لاین (Rap Bars & Catchy Hook)', short: 'تکست رپ با هوک' },
   { id: 'drill_sliding', label: 'دریل دارک با ساختار دراپ و اینترلود (Dark Drill: Gliding Bass, Triplets & Fast Hook)', short: 'دریل دارک با اسلاید' },
-  { id: 'ghazal_tasnif', label: 'غزل، تصنیف و آواز دستگاهی (Ghazal & Traditional Tasnif)', short: 'تصنیف و آواز سنتی' },
-  { id: 'chahar_pareh', label: 'چهارپاره نوین ادبی با تمپوی ملودیک (Modern Persian Chahar-Pareh Cycle)', short: 'چهارپاره نوین ادبی' },
+  { id: 'ghazal_tasnif', label: 'تصنیف، غزل و آواز دستگاهی کهن (پیش‌درآمد، درآمد آوازی، تصنیف، فرود)', short: 'تصنیف و آواز دستگاهی' },
+  { id: 'chahar_pareh', label: 'چهارپاره نوین ادبی با ترجیع‌بند ملودیک (Modern Persian Chahar-Pareh Cycle)', short: 'چهارپاره نوین ادبی' },
   { id: 'sheer_nou_nimai', label: 'شعر نو نیمایی آهنگین با ریتم آزاد (Nimai Modern Poetry with Free Melodic Cadence)', short: 'شعر نو نیمایی آهنگین' },
-  { id: 'rnb_slow_jam', label: 'اسلو جم و آر اند بی با آترو و بداهه‌خوانی (R&B Slow Jam with Vocal Ad-libs & Outro Fade)', short: 'اسلو جم آر اند بی' },
-  { id: 'rock_anthem_solo', label: 'راک ارکسترال با سولو گیتار الکتریک و اوج حماسی (Rock Anthem with Shredding Guitar Solo)', short: 'راک آنتم با سولو گیتار' },
   { id: 'ballad_crescendo', label: 'بالاد احساسی با کرشندو و اوج ارکسترال (Cinematic Crescendo Ballad)', short: 'بالاد با کرشندو' },
-  { id: 'anthem_march', label: 'سرود ملی و مارش باشکوه حماسی (National Anthem & March)', short: 'سرود ملی و مارش' },
-  { id: 'club_dance_drop', label: 'ترک پارتی با دراپ الکترونیک (Dance Track & Drop)', short: 'پارتی با دراپ' },
-  { id: 'party_bandari_6_8', label: 'قطعه شاد پایکوبی ۶/۸ با کسر و نی‌انبان (Festive 6/8 Folkloric Dance with Drop)', short: 'شاد ۶/۸ پایکوبی نواحی' },
-  { id: 'acoustic_unplugged', label: 'آکوستیک آنپلاگد صمیمی گیتار/پیانو (Intimate Acoustic Unplugged & Spoken Word)', short: 'آکوستیک آنپلاگد صمیمی' },
-  { id: 'diss_protest', label: 'دیس ترک و تکست اعتراضی طوفانی (Diss Track / Protest)', short: 'دیس ترک / اعتراضی' },
-  { id: 'short_viral', label: 'ترانه کوتاه با هوک ویرال (Short Viral Hook)', short: 'هوک کوتاه ویرال' },
+  { id: 'rock_anthem_solo', label: 'راک آنتم با سولو گیتار الکتریک و اوج حماسی (Rock Anthem with Shredding Guitar Solo)', short: 'راک آنتم با سولو گیتار' },
+  { id: 'rnb_slow_jam', label: 'اسلو جم و آر اند بی با آترو و ادلیب (R&B Slow Jam with Vocal Ad-libs & Outro Fade)', short: 'اسلو جم آر اند بی' },
+  { id: 'club_dance_drop', label: 'ترک پارتی با بیلدآپ، تنش و دراپ الکترونیک (EDM Build-Up, Tension & Monster Drop)', short: 'پارتی با دراپ' },
+  { id: 'party_bandari_6_8', label: 'قطعه شاد پایکوبی ۶/۸ با تکنوازی نی‌انبان و دمام (Festive 6/8 Folkloric Dance with Percussion Solo)', short: 'شاد ۶/۸ پایکوبی نواحی' },
+  { id: 'acoustic_unplugged', label: 'آکوستیک آنپلاگد صمیمی گیتار/پیانو با دکلمه (Intimate Acoustic Unplugged & Spoken Word)', short: 'آکوستیک آنپلاگد صمیمی' },
+  { id: 'diss_protest', label: 'دیس ترک و تکست اعتراضی طوفانی و رگباری (Fast-Paced Diss Track & Hardcore Flow)', short: 'دیس ترک / اعتراضی' },
+  { id: 'aaba_classic', label: 'فرم کلاسیک ترانه‌سرایی AABA (Vintage 32-Bar AABA Form)', short: 'فرم کلاسیک AABA' },
+  { id: 'strophic_ballad', label: 'ساختار استروفیک / منظومه روایی بند به بند (Strophic Storytelling Ballad)', short: 'منظومه روایی استروفیک' },
+  { id: 'duet_dialogue', label: 'ترانه گفتگومحور دونوازی زن و مرد (Call & Response Duet Dialogue)', short: 'دوئت گفتگومحور زن و مرد' },
+  { id: 'anthem_march', label: 'سرود ملی و مارش باشکوه حماسی با کُرال (Grand National Anthem & March)', short: 'سرود ملی و مارش' },
+  { id: 'ambient_stream', label: 'قطعه مراقبه‌ای امبینت با جریان شعری سیال (Ambient Stream of Consciousness)', short: 'امبینت جریان سیال' },
+  { id: 'short_viral', label: 'ترانه کوتاه ۶۰ ثانیه‌ای با هوک ویرال (Short Viral 60-Second Hook)', short: 'هوک کوتاه ویرال' },
 ];
 
-// 3. TEMPO / BPM
+// 3. INSTRUMENT OPTIONS (تنوع انواع ساز در ۳۰ ساز ایرانی، کوبه‌ای و غربی)
+export interface InstrumentOption {
+  id: string;
+  name: string;
+  category: 'iranian' | 'percussion' | 'western';
+  englishTag: string;
+  desc?: string;
+}
+
+export const INSTRUMENT_OPTIONS: InstrumentOption[] = [
+  // سازهای اصیل ایرانی
+  { id: 'tar', name: 'تار ایرانی', category: 'iranian', englishTag: 'Persian Concert Tar', desc: 'مضراب‌های شفاف، نغمه‌های شور و اصفهان' },
+  { id: 'setar', name: 'سه‌تار صوفیانه', category: 'iranian', englishTag: 'Mystic Persian Setar', desc: 'نوای خلوت، عرفانی و سیم مشتاق' },
+  { id: 'santur', name: 'سنتور کریستالی', category: 'iranian', englishTag: 'Persian Santur', desc: 'مضراب‌های چوبی، طنین زنگ‌وار زهی' },
+  { id: 'kamancheh', name: 'کمانچه لری و سنتی', category: 'iranian', englishTag: 'Acoustic Kamancheh', desc: 'آرشه غمگین و پرشور، نوای کوهستان' },
+  { id: 'ney', name: 'نی هفت‌بند عرفانی', category: 'iranian', englishTag: 'Persian Ney Flute', desc: 'دمیدن سوزناک نای، حس مولانا و فراق' },
+  { id: 'qanun', name: 'قانون زهی مضرابی', category: 'iranian', englishTag: 'Plucked Persian Qanun', desc: 'ریزش ریز زنگین مضراب‌ها' },
+  { id: 'oud', name: 'عود و بربط کهن', category: 'iranian', englishTag: 'Deep Acoustic Barbat and Oud', desc: 'صدای بم، مخملی و رازآلود مشرق‌زمین' },
+  { id: 'duduk', name: 'دودوک کوهستانی', category: 'iranian', englishTag: 'Soulful Armenian/Persian Duduk', desc: 'نوای بادی اندوه‌بار و سینمایی قفقاز' },
+  { id: 'ghaychak', name: 'قیچک باس بلوچستان', category: 'iranian', englishTag: 'Resonant Ghaychak Bass', desc: 'آرشه‌ای خش‌دار و اساطیری کویر' },
+  { id: 'ney_anban', name: 'نی‌انبان شاد بوشهری', category: 'iranian', englishTag: 'Festive Southern Ney-Anban Bagpipe', desc: 'ضرب ۶/۸ پایکوبی و دریای جنوب' },
+  // سازهای کوبه‌ای و ضربی
+  { id: 'tombak', name: 'تنبک پوستی ضربی', category: 'percussion', englishTag: 'Persian Wooden Tombak', desc: 'ریزها، پلنگ‌ها و ریتم اصیل ایرانی' },
+  { id: 'daf', name: 'دف زنگوله‌دار حماسی', category: 'percussion', englishTag: 'Jingled Persian Daf Drum', desc: 'کوبش‌های سنگین خانقاهی و شورانگیز' },
+  { id: 'dammam', name: 'دمام و سنج جنوب', category: 'percussion', englishTag: 'Heavy Dammam and Senj Chants', desc: 'کوبش حماسی و آیینی خلیج فارس' },
+  { id: 'dayereh', name: 'دایره زنگی محلی', category: 'percussion', englishTag: 'Folk Dayereh Percussion', desc: 'ریتم رقصان و شادی‌آور مجالس' },
+  { id: 'live_drums', name: 'درامز زنده استودیویی', category: 'percussion', englishTag: 'Tight Live Studio Drum Kit', desc: 'اسنر زنده، کیک پانچ و سنج‌های پرحرارت' },
+  { id: 'trap_808', name: 'بیس و ساب ۸۰۸ کوبنده', category: 'percussion', englishTag: 'Deep Sub 808 and Sharp Trap Snares', desc: 'لرزاننده باندها و های‌هت‌های رپ' },
+  // سازهای غربی و ارکسترال
+  { id: 'grand_piano', name: 'پیانو گرند آکوستیک', category: 'western', englishTag: 'Yamaha C7 Concert Grand Piano', desc: 'کلیدهای عاجی پرطنین، هارمونی بالاد' },
+  { id: 'rhodes', name: 'پیانو الکتریک فندر رودز', category: 'western', englishTag: 'Vintage 1974 Fender Rhodes Mk1', desc: 'بل‌های گرم، چایم و آکورد نئو سول' },
+  { id: 'nylon_guitar', name: 'گیتار نایلون کلاسیک/فلامنکو', category: 'western', englishTag: 'Spanish Nylon Acoustic Guitar', desc: 'آرپژهای گرم، فینگرپیکینگ صمیمی' },
+  { id: 'electric_guitar', name: 'گیتار الکتریک و اوردرایو', category: 'western', englishTag: 'Overdriven Stratocaster Electric Guitar', desc: 'ریف‌های راک، سولوهای احساسی' },
+  { id: 'guitar_solo', name: 'سولو گیتار الکتریک واه‌واه', category: 'western', englishTag: 'Screaming Wah-Wah Lead Guitar Solo', desc: 'فریاد سیم‌ها در نقطه عطف و سولو' },
+  { id: 'bass_guitar', name: 'گیتار بیس الکتریک فندر', category: 'western', englishTag: 'Fender Jazz Bass Guitar', desc: 'خط بیس زنده، گروو محرک موزیک' },
+  { id: 'double_bass', name: 'کنترباس آکوستیک آرشه‌ای', category: 'western', englishTag: 'Upright Acoustic Double Bass', desc: 'بیس عمیق چوبی برای جاز و ارکستر' },
+  { id: 'solo_cello', name: 'ویولنسل سلو غمگین', category: 'western', englishTag: 'Soulful Expressive Solo Cello', desc: 'آرشه‌های جان‌سوز در بم‌ترین پرده‌ها' },
+  { id: 'lush_strings', name: 'ارکستر زهی سمفونیک', category: 'western', englishTag: 'Lush 40-Piece Symphonic String Section', desc: 'چکاوک ویولن‌ها و اوج‌های باشکوه' },
+  { id: 'saxophone', name: 'ساکسوفون جاز شبانه', category: 'western', englishTag: 'Velvety Tenor Saxophone', desc: 'نفس‌های برنجی در هوای بارانی شهر' },
+  { id: 'trumpet_muted', name: 'ترومپت میوت‌دار نوآر', category: 'western', englishTag: 'Harmon Muted Jazz Trumpet', desc: 'تنهایی شب، کافه‌های دودی و راز' },
+  { id: 'accordion', name: 'آکاردئون نوستالژیک', category: 'western', englishTag: 'Nostalgic French/Eastern Accordion', desc: 'حس کوچه‌های بارانی پاریس و لاله زار' },
+  { id: 'moog_synth', name: 'سینت‌سایزر آنالوگ موگ', category: 'western', englishTag: 'Analog Moog Sub 37 Bass and Leads', desc: 'بیس‌های گرم آنالوگ و پدهای رترو' },
+  { id: 'ambient_pads', name: 'پدهای امبینت ابری و سینمایی', category: 'western', englishTag: 'Lush Ethereal Ambient Synth Pads', desc: 'اتمسفر کیهانی و اقیانوس صدا' },
+];
+
+// 4. TEMPO / BPM (تنوع ۵ گزینه تمپو و کسر میزان)
 export const TEMPO_OPTIONS = [
-  { id: 'auto', label: 'خودکار بر اساس سبک (Auto by Genre)', short: 'خودکار با سبک' },
-  { id: 'slow', label: 'آرام و اسلو (65-85 BPM)', short: 'آرام (65-85 BPM)' },
-  { id: 'mid', label: 'متوسط و ریتمیک (90-115 BPM)', short: 'متوسط (90-115 BPM)' },
-  { id: 'fast', label: 'تند و پرحرارت (120-145+ BPM)', short: 'تند (120-145+ BPM)' },
+  { id: 'auto', label: 'خودکار بر اساس سبک و ساختار (Auto by Genre)', short: 'خودکار با سبک' },
+  { id: 'slow', label: 'آرام، والس و اسلو (55-80 BPM)', short: 'آرام (55-80 BPM)' },
+  { id: 'mid', label: 'متوسط، ریتمیک و پیوسته (85-110 BPM)', short: 'متوسط (85-110 BPM)' },
+  { id: 'dance_6_8', label: 'ریتمیک شاد ۶/۸ پایکوبی (115-130 BPM)', short: 'شاد ۶/۸ (115-130 BPM)' },
+  { id: 'fast', label: 'تند، هاردکور و پرحرارت (135-165+ BPM)', short: 'تند (135-165+ BPM)' },
 ];
 
-// 4. MOOD OPTIONS
+// 5. MOOD OPTIONS (تنوع ۱۶ حس و اتمسفر)
 export const MOOD_OPTIONS = [
   { id: 'حماسی', label: 'حماسی و ملی میهنی (Epic & Patriotic)', short: 'حماسی و ملی' },
   { id: 'اعتراضی', label: 'اعتراضی، دارک و خیابانی (Protest & Street Gritty)', short: 'اعتراضی و خیابانی' },
@@ -326,16 +398,24 @@ export const MOOD_OPTIONS = [
   { id: 'تعلیق_سینمایی', label: 'دلهره‌آور، سینمایی و تعلیق‌برانگیز (Cinematic Thriller & Suspenseful)', short: 'دلهره‌آور و تعلیق' },
   { id: 'سوررئال', label: 'سوررئال، رویاگونه و اثیری (Dreamy, Psychedelic & Surreal Ethereal)', short: 'سوررئال و رویاگونه' },
   { id: 'آرامش‌بخش', label: 'آرامش‌بخش، ملو و شبانه (Nocturnal Chill, Mellow & Ambient Peace)', short: 'آرامش‌بخش و شبانه' },
+  { id: 'امیدبخش', label: 'امیدبخش، طلوع صبح و روشنایی پس از ظلمت (Radiant Hope & New Dawn)', short: 'امیدبخش و طلوع نو' },
+  { id: 'کولی‌وار', label: 'کولی‌وار، رها و پرواز در دشت (Bohemian Gypsy Nomad & Wild Freedom)', short: 'کولی‌وار و رهایی' },
 ];
 
-// 5. VOCALS
+// 6. VOCALS (تنوع ۹ جنس و استایل صدا)
 export const VOCAL_OPTIONS = [
-  { id: 'مرد', label: 'با صدای مرد (Male Solo)', short: 'صدای مرد' },
-  { id: 'زن', label: 'با صدای زن (Female Solo)', short: 'صدای زن' },
-  { id: 'زن و مرد', label: 'دو صدایی زن و مرد (Duet)', short: 'زن و مرد (دو صدایی)' },
+  { id: 'مرد_گرم', label: 'با صدای مرد بم، گرم و پرطنین (Warm Baritone Male)', short: 'صدای مرد بم و گرم' },
+  { id: 'مرد_سنتی', label: 'با صدای مرد چپ‌کوک و تنور سنتی با تحریر (Traditional Tenor with Tahrir)', short: 'صدای مرد سنتی با تحریر' },
+  { id: 'مرد_راک', label: 'با صدای مرد راک خشن و دیستورت (Gritty Raspy Rock Male)', short: 'صدای مرد راک خشن' },
+  { id: 'زن_سوپرانو', label: 'با صدای زن سوپرانو پروازنده و احساسی (Soaring Emotional Soprano Female)', short: 'صدای زن سوپرانو اوج‌گیر' },
+  { id: 'زن_آلتو', label: 'با صدای زن بم و مخملی آلتو (Velvety Intimate Alto Female)', short: 'صدای زن مخملی آلتو' },
+  { id: 'دوئت', label: 'دو صدایی همخوانی زن و مرد (Harmonious Male & Female Duet)', short: 'زن و مرد (دو صدایی)' },
+  { id: 'کرال_حماسی', label: 'همخوانی گروهی کُرال حماسی و ارکسترال (Epic Symphonic Choir)', short: 'همخوانی کُرال حماسی' },
+  { id: 'رپ_خیابانی', label: 'دلیوری خیابانی و فلو کوبنده رپ (Aggressive Street Rap Delivery)', short: 'فلو کوبنده رپ' },
+  { id: 'نجوا_صمیمی', label: 'نجوا و زمزمه صمیمی آکوستیک (Whispered Intimate ASMR Vocal)', short: 'نجوا و زمزمه صمیمی' },
 ];
 
-// 6. LANGUAGES
+// 7. LANGUAGES
 export const DEFAULT_LANGUAGES = [
   'فارسی',
   'لری',
@@ -497,21 +577,13 @@ export default function App() {
   const [showAddCustomLang, setShowAddCustomLang] = useState<boolean>(false);
 
   // Active Option Tab in Settings Panel
-  const [activeOptionTab, setActiveOptionTab] = useState<'genre' | 'structure' | 'tempo' | 'mood' | 'vocal' | 'lang'>('genre');
+  const [activeOptionTab, setActiveOptionTab] = useState<'genre' | 'structure' | 'instruments' | 'tempo' | 'mood' | 'vocal' | 'lang'>('genre');
 
-  // OpenRouter Unified AI Key & Model State (تنها یک کلید برای اوپن‌روتر و یک کادر برای نام مدل)
-  const [openrouterApiKey, setOpenrouterApiKey] = useState<string>(() => {
-    return localStorage.getItem(OPENROUTER_KEY_STORAGE) || '';
-  });
+  // Selected Instruments (سازبندی و نوع ساز انتخابی مخاطب)
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
+  const [instrumentCategoryFilter, setInstrumentCategoryFilter] = useState<'all' | 'iranian' | 'percussion' | 'western'>('all');
 
-  const [openrouterModel, setOpenrouterModel] = useState<string>(() => {
-    return localStorage.getItem(OPENROUTER_MODEL_STORAGE) || 'deepseek/deepseek-r1:free';
-  });
 
-  const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
-  const [testingOpenRouter, setTestingOpenRouter] = useState<boolean>(false);
-  const [keyTestStatus, setKeyTestStatus] = useState<{ success: boolean; message: string } | null>(null);
-  const [keySaveMessage, setKeySaveMessage] = useState<string>('');
 
   // Saved Songs History & Archive State (accessible from 3-bar Drawer menu)
   const [savedSongs, setSavedSongs] = useState<SavedSong[]>(() => {
@@ -529,6 +601,12 @@ export default function App() {
   const [drawerTab, setDrawerTab] = useState<'sessions' | 'history'>('sessions');
   const [historySearch, setHistorySearch] = useState<string>('');
   const [selectedHistorySong, setSelectedHistorySong] = useState<SavedSong | null>(null);
+
+  // Persian Songbook State (کتاب ترانه ترانه‌سراهای معروف ایران از قدیم تا جدید)
+  const [isSongbookOpen, setIsSongbookOpen] = useState<boolean>(false);
+  const [songbookSearch, setSongbookSearch] = useState<string>('');
+  const [songbookCategory, setSongbookCategory] = useState<string>('all');
+  const [activeSongbookEntry, setActiveSongbookEntry] = useState<SongbookEntry | null>(null);
 
   // Manual Lyric / Song Editing Modal State (ویرایش ترانه توسط مخاطب)
   const [manualEditState, setManualEditState] = useState<{
@@ -593,14 +671,7 @@ export default function App() {
     }
   }, [savedSongs]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(OPENROUTER_KEY_STORAGE, openrouterApiKey);
-      localStorage.setItem(OPENROUTER_MODEL_STORAGE, openrouterModel);
-    } catch {
-      // Ignore
-    }
-  }, [openrouterApiKey, openrouterModel]);
+
 
   const activeSession =
     sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -646,7 +717,7 @@ export default function App() {
         title: song.title || 'ترانه بدون عنوان',
         songResult: song,
         savedAt: timeStr,
-        source: source || 'openrouter',
+        source: source || 'studio',
         actionTrigger,
       };
       return [newEntry, ...prev];
@@ -664,64 +735,7 @@ export default function App() {
     }, 2500);
   };
 
-  const handleSaveOpenRouterConfig = (keyInput?: string, modelInput?: string) => {
-    const k = (keyInput !== undefined ? keyInput : openrouterApiKey).trim();
-    const m = (modelInput !== undefined ? modelInput : openrouterModel).trim() || 'deepseek/deepseek-r1:free';
-    setOpenrouterApiKey(k);
-    setOpenrouterModel(m);
-    localStorage.setItem(OPENROUTER_KEY_STORAGE, k);
-    localStorage.setItem(OPENROUTER_MODEL_STORAGE, m);
-    setKeySaveMessage('کلید و مدل هوش مصنوعی با موفقیت در مرورگر ذخیره شدند.');
-    setTimeout(() => setKeySaveMessage(''), 3500);
-  };
 
-  const handleClearOpenRouterKey = () => {
-    setOpenrouterApiKey('');
-    localStorage.removeItem(OPENROUTER_KEY_STORAGE);
-    setKeyTestStatus(null);
-    setKeySaveMessage('کلید با موفقیت حذف گردید.');
-    setTimeout(() => setKeySaveMessage(''), 3500);
-  };
-
-  const handleTestOpenRouterKey = async (overrideKey?: string, overrideModel?: string) => {
-    const k = (overrideKey !== undefined ? overrideKey : openrouterApiKey).trim();
-    const m = (overrideModel !== undefined ? overrideModel : openrouterModel).trim() || 'deepseek/deepseek-r1:free';
-
-    if (!k) {
-      setKeyTestStatus({
-        success: false,
-        message: 'لطفاً ابتدا کلید API اوپن‌روتر خود را در کادر وارد نمایید.',
-      });
-      return;
-    }
-
-    setTestingOpenRouter(true);
-    setKeyTestStatus(null);
-
-    try {
-      const resp = await fetch('/api/test-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'openrouter',
-          apiKey: k,
-          model: m,
-        }),
-      });
-      const data = await resp.json();
-      setKeyTestStatus({
-        success: !!data.valid,
-        message: data.message || (data.valid ? 'کلید با موفقیت متصل شد.' : 'خطا در اعتبارسنجی کلید.'),
-      });
-    } catch (e: any) {
-      setKeyTestStatus({
-        success: false,
-        message: `خطای اتصال به سرور: ${e?.message || 'خطای شبکه'}`,
-      });
-    } finally {
-      setTestingOpenRouter(false);
-    }
-  };
 
   const handleDownloadSong = (song: SongGenerationResult) => {
     const fileContent = `=====================================================
@@ -829,6 +843,73 @@ ${song.composerNote}
     }
   };
 
+  // Persian Songbook Handlers (الهام‌گیری و تنظیم استودیو در سبک ترانه‌سرایان معروف)
+  const handleApplySongbookInspiration = (entry: SongbookEntry) => {
+    if (entry.era === 'rap_protest') {
+      const g = GENRE_OPTIONS.find((opt) => opt.id === 'rap_boombap') || GENRE_OPTIONS[0];
+      setSelectedGenre(g.label);
+      setSelectedSongType(SONG_TYPE_OPTIONS[2].label); // rap_storytelling
+    } else if (entry.era === 'classic') {
+      const g = GENRE_OPTIONS.find((opt) => opt.id === 'sonati') || GENRE_OPTIONS[0];
+      setSelectedGenre(g.label);
+      setSelectedSongType(SONG_TYPE_OPTIONS[5].label); // ghazal_tasnif
+    } else {
+      const g = GENRE_OPTIONS.find((opt) => opt.id === 'pop') || GENRE_OPTIONS[0];
+      setSelectedGenre(g.label);
+      setSelectedSongType(SONG_TYPE_OPTIONS[1].label); // full_song
+    }
+
+    if (entry.recommendedMood) {
+      const foundMood = MOOD_OPTIONS.find((m) => m.label.includes(entry.recommendedMood!) || entry.recommendedMood!.includes(m.id));
+      if (foundMood) setSelectedMood(foundMood.label);
+    }
+
+    if (entry.recommendedTempo) {
+      const foundTempo = TEMPO_OPTIONS.find((t) => t.label.includes(entry.recommendedTempo!) || entry.recommendedTempo!.includes(t.id));
+      if (foundTempo) setSelectedTempo(foundTempo.label);
+    }
+
+    const inspirationPrompt = `یک ترانه با الهام از مکتب ترانه‌سرایی «${entry.lyricist}» (مشابه شاهکار جاودان «${entry.title}»)، با وزن عروضی «${entry.poeticMeter || 'عروضی و مقفا'}» و داستانی با عمق احساسی و بدون قافیه تکراری بنویس.`;
+    setInputText(inspirationPrompt);
+    setIsSongbookOpen(false);
+    setActiveSongbookEntry(null);
+    if (textareaRef.current) {
+      setTimeout(() => textareaRef.current?.focus(), 150);
+    }
+  };
+
+  const handleDownloadSongbookEntry = (entry: SongbookEntry) => {
+    const fileContent = `=====================================================
+کتاب ترانه ایرانیان: ${entry.title}
+ترانه‌سرا: ${entry.lyricist}
+خواننده: ${entry.singer}
+${entry.composer ? `آهنگساز: ${entry.composer}\n` : ''}${entry.year ? `سال سرایش/انتشار: ${entry.year}\n` : ''}دوره ادبی: ${entry.eraLabel}
+سبک موسیقی: ${entry.genre}
+${entry.poeticMeter ? `وزن عروضی: ${entry.poeticMeter}\n` : ''}${entry.dastgahOrKey ? `دستگاه یا گام: ${entry.dastgahOrKey}\n` : ''}=====================================================
+
+[داستان سرایش و تحلیل ادبی]
+${entry.storyNote}
+
+=====================================================
+[متن ترانه]
+=====================================================
+${entry.lyrics}
+
+=====================================================
+برگرفته از بخش کتاب ترانه استودیو «ترانه سرای فرخزاد»
+=====================================================`;
+
+    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${entry.title.replace(/[\\/:*?"<>|]/g, '_')}_${entry.lyricist.replace(/[\\/:*?"<>|]/g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Manual Editing Handlers (ویرایش مستقیم توسط مخاطب)
   const handleOpenManualEdit = (messageId: string, song: SongGenerationResult) => {
     setManualEditState({
@@ -872,8 +953,6 @@ ${song.composerNote}
           lyrics: manualEditState?.lyrics || '',
           genre: manualEditState?.originalSong.genre || selectedGenre,
           storyTheme: manualEditState?.title || selectedMood,
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: openrouterModel.trim(),
         }),
       });
       const data = await res.json();
@@ -1001,9 +1080,6 @@ ${song.composerNote}
         body: JSON.stringify({
           currentSong: aiEditState.song,
           instruction: instructionText,
-          provider: 'openrouter',
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: openrouterModel.trim() || 'deepseek/deepseek-r1:free',
         }),
       });
 
@@ -1034,7 +1110,7 @@ ${song.composerNote}
           }))
         );
 
-        saveSongToHistory(revisedSong, data.source || 'openrouter', 'manual');
+        saveSongToHistory(revisedSong, data.source || 'studio', 'manual');
         setAiEditState(null);
       }
     } catch (e: any) {
@@ -1099,13 +1175,8 @@ ${song.composerNote}
     }
     setIsLoading(true);
 
-    const primaryModel = openrouterModel.trim() || 'meta-llama/llama-3.3-70b-instruct:free';
-    const fallbackModel = primaryModel === 'meta-llama/llama-3.3-70b-instruct:free'
-      ? 'google/gemma-2-9b-it:free'
-      : 'meta-llama/llama-3.3-70b-instruct:free';
-
-    const sendChatRequest = async (modelToUse: string) => {
-      return await fetch('/api/chat', {
+    try {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1117,118 +1188,74 @@ ${song.composerNote}
           mood: selectedMood,
           languages: langsToSend,
           language: langsToSend.join(' + '),
-          provider: 'openrouter',
-          openrouterApiKey: openrouterApiKey.trim(),
-          openrouterModel: modelToUse,
+          selectedInstruments: selectedInstruments,
           conversationHistory: activeSession.messages.slice(-6).map((m) => ({
             text: m.text || m.songResult?.title || '',
             role: m.sender === 'user' ? 'user' : 'model',
           })),
         }),
       });
-    };
 
-    let response: Response | null = null;
-    let data: any = null;
-    let usedModel = primaryModel;
-    let isRetried = false;
+      const data = await response.json().catch(() => ({}));
 
-    try {
-      response = await sendChatRequest(primaryModel);
-      data = await response.json().catch(() => ({}));
-
-      // Check if primary call failed and automatic retry should trigger
-      if (!response.ok || data.error) {
-        console.warn(`[Auto-Retry] Primary model ${primaryModel} failed. Automatically retrying once with stable fallback model ${fallbackModel}...`);
-        setRetryNotification(`اتصال با مدل اولیه (${primaryModel.split('/').pop()}) ناموفق بود؛ در حال تلاش مجدد خودکار با مدل پایدار جایگزین (${fallbackModel.split('/').pop()})...`);
-        isRetried = true;
-        usedModel = fallbackModel;
-
-        await new Promise((r) => setTimeout(r, 1200));
-
-        response = await sendChatRequest(fallbackModel);
-        data = await response.json().catch(() => ({}));
-      }
-    } catch (err: any) {
-      console.warn(`[Auto-Retry Catch] Primary model error: ${err?.message}. Retrying with ${fallbackModel}...`);
-      setRetryNotification(`خطای اتصال با مدل اولیه؛ در حال بازتلاش خودکار با مدل پشتیبان (${fallbackModel.split('/').pop()})...`);
-      isRetried = true;
-      usedModel = fallbackModel;
-
-      try {
-        await new Promise((r) => setTimeout(r, 1200));
-        response = await sendChatRequest(fallbackModel);
-        data = await response.json().catch(() => ({}));
-      } catch (err2: any) {
-        setRetryNotification(null);
-        const botErr: ChatMessage = {
+      if (!response.ok || data?.error) {
+        const errorMsg: ChatMessage = {
           id: `bot-err-${Date.now()}`,
           sender: 'bot',
           timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-          error: `خطای شبکه در ارتباط با سرور: ${err2?.message || 'مشکل اتصال اینترنت'}`,
-          failedProvider: 'openrouter',
+          error: data?.error || 'خطا در ارتباط با هوش مصنوعی استودیو.',
+          failedProvider: 'studio',
         };
 
         setSessions((prev) =>
           prev.map((s) =>
             s.id === activeSession.id
-              ? { ...s, messages: [...s.messages, botErr] }
+              ? { ...s, messages: [...s.messages, errorMsg] }
               : s
           )
         );
         return;
       }
-    } finally {
-      setRetryNotification(null);
-      setIsLoading(false);
-    }
 
-    if (!response || !response.ok || data?.error) {
-      const errorMsg: ChatMessage = {
+      if (data.result) {
+        const botMsg: ChatMessage = {
+          id: `bot-${Date.now()}`,
+          sender: 'bot',
+          timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+          songResult: data.result,
+          source: data.source || 'studio',
+          warning: data.warning,
+        };
+
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === activeSession.id
+              ? {
+                  ...s,
+                  messages: [...s.messages, botMsg],
+                }
+              : s
+          )
+        );
+      }
+    } catch (err: any) {
+      const botErr: ChatMessage = {
         id: `bot-err-${Date.now()}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-        error: data?.error || 'خطا در ارتباط با سرویس هوش مصنوعی (حتی پس از تلاش مجدد با مدل پایدار جایگزین).',
-        failedProvider: data?.provider || 'openrouter',
+        error: `خطای شبکه در ارتباط با سرور: ${err?.message || 'مشکل اتصال اینترنت'}`,
+        failedProvider: 'studio',
       };
 
       setSessions((prev) =>
         prev.map((s) =>
           s.id === activeSession.id
-            ? {
-                ...s,
-                messages: [...s.messages, errorMsg],
-              }
+            ? { ...s, messages: [...s.messages, botErr] }
             : s
         )
       );
-      return;
-    }
-
-    if (data.result) {
-      const warningNote = isRetried
-        ? `مدل اولیه به دلیل ترافیک بالا در دسترس نبود؛ سرایش با مدل پایدار جایگزین (${usedModel.split('/').pop()}) انجام شد.`
-        : data.warning;
-
-      const botMsg: ChatMessage = {
-        id: `bot-${Date.now()}`,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-        songResult: data.result,
-        source: data.source || `openrouter (${usedModel})`,
-        warning: warningNote,
-      };
-
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSession.id
-            ? {
-                ...s,
-                messages: [...s.messages, botMsg],
-              }
-            : s
-        )
-      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1243,30 +1270,11 @@ ${song.composerNote}
     handleSendMessage(qp.prompt, qp.languages);
   };
 
-  const getProviderBadge = (providerName: string) => {
-    if (providerName.includes('openrouter')) {
-      const modelPart = providerName.replace('openrouter', '').replace(/[()]/g, '').trim() || openrouterModel;
-      const shortName = modelPart.split('/').pop() || modelPart;
-      const isFree = modelPart.includes(':free');
-      return {
-        label: `OpenRouter (${shortName}${isFree ? ' · رایگان' : ''})`,
-        short: isFree ? `🌐 ${shortName} (رایگان)` : `🌐 ${shortName}`,
-        bg: isFree
-          ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
-          : 'bg-purple-500/15 text-purple-300 border-purple-500/40',
-      };
-    }
-    if (providerName.includes('gemini')) {
-      return {
-        label: 'Google Gemini (پشتیبان ابری)',
-        short: 'جِمِنای',
-        bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-      };
-    }
+  const getProviderBadge = (_providerName?: string) => {
     return {
-      label: 'ترانه سرای فرخزاد (موتور اختصاصی)',
-      short: 'استودیو فرخزاد',
-      bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      label: 'هوش سرایش استودیو فرخزاد',
+      short: '✨ هوش استودیو فرخزاد',
+      bg: 'bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/40',
     };
   };
 
@@ -1318,21 +1326,32 @@ ${song.composerNote}
                 <span>گفتگوی جدید و ترانه تازه</span>
               </button>
 
-              {/* AI Key & Provider Button in Drawer */}
+              {/* Studio AI Status in Drawer */}
+              <div className="mt-2.5 w-full p-2.5 rounded-xl bg-[#171B2A] border border-[#D4AF37]/30 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span className="text-[#F4EFE6] font-semibold">هوش سرایش استودیو فرخزاد</span>
+                </div>
+                <span className="text-[10px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded text-emerald-300 font-semibold">
+                  خودکار و فعال
+                </span>
+              </div>
+
+              {/* Persian Songbook Button in Drawer */}
               <button
                 type="button"
                 onClick={() => {
-                  setShowKeyModal(true);
+                  setIsSongbookOpen(true);
                   setIsDrawerOpen(false);
                 }}
-                className="mt-2.5 w-full py-2 px-3 rounded-xl bg-[#171B2A] hover:bg-[#202538] border border-[#D4AF37]/35 text-xs text-[#D4AF37] font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                className="mt-2 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#D4AF37]/20 to-amber-500/10 hover:from-amber-500/25 hover:to-[#D4AF37]/30 border border-[#D4AF37]/50 text-xs text-[#F4EFE6] font-bold flex items-center justify-between transition-colors cursor-pointer shadow-sm"
               >
-                <div className="flex items-center gap-2">
-                  <Key className="w-3.5 h-3.5" />
-                  <span>تنظیم کلید OpenRouter و نام هوش مصنوعی</span>
+                <div className="flex items-center gap-2 text-[#D4AF37]">
+                  <BookOpen className="w-4 h-4 text-[#D4AF37]" />
+                  <span>کتاب ترانه ایرانیان (از قدیم تا جدید)</span>
                 </div>
-                <span className="text-[10px] bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 rounded text-cyan-300 font-mono" dir="ltr">
-                  {openrouterModel.split('/').pop()}
+                <span className="text-[10px] bg-[#D4AF37] text-black font-extrabold px-1.5 py-0.5 rounded-full">
+                  {PERSIAN_SONGBOOK.length} ترانه
                 </span>
               </button>
 
@@ -1531,281 +1550,7 @@ ${song.composerNote}
         </div>
       )}
 
-      {/* Unified OpenRouter AI Key & Model Management Modal */}
-      {showKeyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-xs"
-            onClick={() => setShowKeyModal(false)}
-          />
-          <div className="relative z-10 w-full max-w-xl bg-[#10131F] border border-[#D4AF37]/50 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
-                  <Key className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#F4EFE6] flex items-center gap-2">
-                    <span>تنظیم کلید و مدل هوش مصنوعی (OpenRouter)</span>
-                    <span className="text-[10px] bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded font-mono">
-                      Universal API
-                    </span>
-                  </h3>
-                  <p className="text-xs text-[#A69F91] mt-0.5">
-                    اتصال به صدها مدل هوش مصنوعی قدرتمند جهان با یک کلید واحد و مدل‌های با توکن رایگان
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(false)}
-                className="p-1 rounded-lg text-[#8E8779] hover:text-[#F4EFE6] hover:bg-white/5 cursor-pointer transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Quick Explanation & OpenRouter Link Card */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#141726] to-[#121420] border border-[#D4AF37]/30 text-xs text-[#E2DDD3] space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[#D4AF37] font-bold">
-                  <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                  <span>دسترسی آزاد به بهترین هوش مصنوعی‌های جهان:</span>
-                </div>
-                <a
-                  href="https://openrouter.ai/keys"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1"
-                >
-                  <span>دریافت کلید رایگان</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <p className="text-[11px] text-[#A69F91] leading-relaxed">
-                با داشتن یک کلید از <strong>OpenRouter</strong>، نیازی به ثبت نام جداگانه در OpenAI یا Anthropic ندارید. مدل‌های دارای پسوند <code className="text-cyan-300 font-mono">:free</code> توکن کاملاً رایگان دارند و می‌توانید بدون هزینه از آنها برای سرایش شعر و ساخت پرامپت سونو استفاده کنید.
-              </p>
-            </div>
-
-            {/* Field 1: OpenRouter API Key Input */}
-            <div className="p-3.5 rounded-xl bg-[#141724] border border-white/10 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-[#F4EFE6] flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span>۱. کادر وارد کردن کلید OpenRouter (با sk-or- شروع می‌شود):</span>
-                </label>
-                {openrouterApiKey ? (
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
-                    <ShieldCheck className="w-3 h-3" /> کلید ذخیره شده
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-amber-400">کلید وارد نشده</span>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="sk-or-v1-..."
-                  value={openrouterApiKey}
-                  onChange={(e) => {
-                    setOpenrouterApiKey(e.target.value);
-                    setKeyTestStatus(null);
-                  }}
-                  className="flex-1 h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-[#D4AF37] font-mono"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleSaveOpenRouterConfig()}
-                  className="h-9 px-3 rounded-lg bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] text-xs font-bold cursor-pointer transition-colors shrink-0 flex items-center gap-1"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>ذخیره کلید</span>
-                </button>
-                {openrouterApiKey && (
-                  <button
-                    type="button"
-                    onClick={handleClearOpenRouterKey}
-                    title="حذف کلید"
-                    className="h-9 px-2.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-xs text-rose-300 font-medium cursor-pointer transition-colors shrink-0"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Field 2: AI Model Name Input (همان کادر اسم هوش مصنوعی درخواستی کاربر) */}
-            <div className="p-3.5 rounded-xl bg-[#141724] border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-[#F4EFE6] flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>۲. کادر نوشتن نام مدل هوش مصنوعی (Model Name):</span>
-                </label>
-                <span className="text-[10px] text-[#A69F91]">
-                  مدل فعال:{' '}
-                  <span className="font-mono text-cyan-300 font-bold" dir="ltr">
-                    {openrouterModel.split('/').pop()}
-                  </span>
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="مثال: meta-llama/llama-3.3-70b-instruct:free یا deepseek/deepseek-r1:free"
-                  value={openrouterModel}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setOpenrouterModel(val);
-                    localStorage.setItem(OPENROUTER_MODEL_STORAGE, val);
-                    setKeyTestStatus(null);
-                  }}
-                  className="flex-1 h-9 px-3 rounded-lg bg-[#0A0C13] border border-white/15 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-cyan-400 font-mono"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  disabled={testingOpenRouter}
-                  onClick={() => handleTestOpenRouterKey()}
-                  className="h-9 px-3 rounded-lg bg-cyan-900/50 hover:bg-cyan-900 border border-cyan-500/40 text-xs text-cyan-200 font-semibold cursor-pointer transition-colors shrink-0 flex items-center gap-1.5"
-                >
-                  {testingOpenRouter ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>تست اتصال...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>تست اتصال کلید</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Status and notification alerts */}
-              {keySaveMessage && (
-                <div className="text-[11px] p-2 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>{keySaveMessage}</span>
-                </div>
-              )}
-
-              {keyTestStatus && (
-                <div
-                  className={`text-[11px] p-2.5 rounded-lg flex items-center gap-2 ${
-                    keyTestStatus.success
-                      ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-rose-950/40 text-rose-300 border border-rose-500/30'
-                  }`}
-                >
-                  {keyTestStatus.success ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                  ) : (
-                    <XCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                  )}
-                  <span className="leading-relaxed">{keyTestStatus.message}</span>
-                </div>
-              )}
-
-              {/* Quick Pick: Free Models */}
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-cyan-300 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    انتخاب سریع مدل‌های با توکن رایگان (کلیک کنید):
-                  </span>
-                  <span className="text-[10px] text-[#8E8779]">بدون نیاز به شارژ مالی</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {OPENROUTER_FREE_MODELS.map((model) => {
-                    const isSelected = openrouterModel === model.id;
-                    return (
-                      <button
-                        key={model.id}
-                        type="button"
-                        onClick={() => {
-                          setOpenrouterModel(model.id);
-                          handleSaveOpenRouterConfig(undefined, model.id);
-                        }}
-                        className={`p-2 rounded-lg border text-right transition-all cursor-pointer flex flex-col gap-0.5 ${
-                          isSelected
-                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm ring-1 ring-cyan-400/40'
-                            : 'bg-[#0E1018] border-white/10 hover:border-cyan-500/40 text-[#A69F91] hover:text-[#F4EFE6]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xs font-bold text-white">{model.name}</span>
-                          <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-500/30 font-semibold">
-                            رایگان
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-[#8E8779] line-clamp-1">{model.desc}</span>
-                        <span className="text-[9px] text-[#696357] font-mono mt-0.5" dir="ltr">
-                          {model.id}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Pick: Top Literary Models */}
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-purple-300 flex items-center gap-1">
-                    <Award className="w-3 h-3" />
-                    مدل‌های تخصصی شعر و ادبیات فارسی (در صورت داشتن موجودی):
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                  {OPENROUTER_POPULAR_MODELS.map((model) => {
-                    const isSelected = openrouterModel === model.id;
-                    return (
-                      <button
-                        key={model.id}
-                        type="button"
-                        onClick={() => {
-                          setOpenrouterModel(model.id);
-                          handleSaveOpenRouterConfig(undefined, model.id);
-                        }}
-                        className={`p-2 rounded-lg border text-right transition-all cursor-pointer flex flex-col gap-0.5 ${
-                          isSelected
-                            ? 'bg-purple-950/50 border-purple-400 text-white shadow-sm ring-1 ring-purple-400/40'
-                            : 'bg-[#0E1018] border-white/10 hover:border-purple-500/40 text-[#A69F91] hover:text-[#F4EFE6]'
-                        }`}
-                      >
-                        <span className="text-xs font-bold text-white">{model.name}</span>
-                        <span className="text-[10px] text-[#8E8779] line-clamp-1">{model.desc}</span>
-                        <span className="text-[9px] text-[#696357] font-mono mt-0.5" dir="ltr">
-                          {model.id.split('/').pop()}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-              <span className="text-[11px] text-[#8E8779]">
-                کلید در مرورگر شما محلی ذخیره می‌شود و مستقیماً به OpenRouter ارسال می‌گردد.
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(false)}
-                className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs cursor-pointer shadow-md transition-colors"
-              >
-                تأیید و بازگشت به استودیو
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Selected History Song Modal */}
       {selectedHistorySong && (
@@ -2342,7 +2087,7 @@ ${song.composerNote}
                   <h3 className="text-base font-bold text-[#F4EFE6] flex items-center gap-2">
                     <span>ویرایش و ارتقای ترانه با هوش مصنوعی</span>
                     <span className="text-[10px] bg-purple-500/15 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">
-                      {getProviderBadge(openrouterModel).short}
+                      ✨ هوش استودیو فرخزاد
                     </span>
                   </h3>
                   <p className="text-xs text-[#8E8779] mt-0.5">
@@ -2497,6 +2242,424 @@ ${song.composerNote}
         </div>
       )}
 
+      {/* Persian Songbook Main Modal (کتاب ترانه ترانه‌سراهای معروف ایرانی) */}
+      {isSongbookOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div
+            className="fixed inset-0 bg-black/85 backdrop-blur-xs"
+            onClick={() => setIsSongbookOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-5xl bg-[#0F121C] border border-[#D4AF37]/50 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-[#D4AF37]/20 border border-[#D4AF37]/50 flex items-center justify-center text-[#D4AF37] shadow-md">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-bold text-[#F4EFE6]">
+                      کتاب ترانه ایرانیان (از قدیم تا جدید)
+                    </h3>
+                    <span className="text-[10px] bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-2 py-0.5 rounded-full font-bold">
+                      {PERSIAN_SONGBOOK.length} شاهکار ماندگار
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#A69F91] mt-0.5">
+                    مجموعه غنی از شاهکارهای ترانه‌سرایان بزرگ ایران همراه با وزن عروضی، تحلیل ادبی، متن پیراسته و الهام‌گیری مستقیم در استودیو
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSongbookOpen(false)}
+                className="p-1.5 rounded-lg text-[#8E8779] hover:text-[#F4EFE6] hover:bg-white/5 cursor-pointer transition-colors"
+                title="بستن کتاب ترانه"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="space-y-3 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="جستجو در ترانه‌ها، نام ترانه‌سرا (فروغ، جنتی‌عطایی، سرفراز، بمانی...)، خواننده، وزن عروضی یا متن..."
+                    value={songbookSearch}
+                    onChange={(e) => setSongbookSearch(e.target.value)}
+                    className="w-full h-10 pr-9 pl-9 rounded-xl bg-[#141724] border border-white/10 text-xs text-[#F4EFE6] placeholder-[#696357] focus:outline-none focus:border-[#D4AF37]/60"
+                  />
+                  <Search className="w-4 h-4 text-[#8E8779] absolute right-3 top-3 pointer-events-none" />
+                  {songbookSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setSongbookSearch('')}
+                      className="absolute left-3 top-3 text-[#8E8779] hover:text-[#F4EFE6] cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Category Badges Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                {[
+                  { id: 'all', label: 'همه ترانه‌ها', count: PERSIAN_SONGBOOK.length },
+                  {
+                    id: 'farrokhzad',
+                    label: 'مکتب فرخزاد (فروغ و فریدون)',
+                    count: PERSIAN_SONGBOOK.filter((s) => s.era === 'farrokhzad').length,
+                  },
+                  {
+                    id: 'golden',
+                    label: 'عصر طلایی (جنتی‌عطایی، سرفراز، شهیار، زویا، هما)',
+                    count: PERSIAN_SONGBOOK.filter((s) => s.era === 'golden').length,
+                  },
+                  {
+                    id: 'classic',
+                    label: 'تصنیف و کهن (رهی، سیمین، بیژن ترقی)',
+                    count: PERSIAN_SONGBOOK.filter((s) => s.era === 'classic').length,
+                  },
+                  {
+                    id: 'contemporary',
+                    label: 'معاصر (یداللهی، بمانی، برزویی، گلرویی)',
+                    count: PERSIAN_SONGBOOK.filter((s) => s.era === 'contemporary').length,
+                  },
+                  {
+                    id: 'rap_protest',
+                    label: 'هیپ‌هاپ داستانی و اجتماعی (یاس)',
+                    count: PERSIAN_SONGBOOK.filter((s) => s.era === 'rap_protest').length,
+                  },
+                ].map((cat) => {
+                  const isCurrent = songbookCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSongbookCategory(cat.id)}
+                      className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        isCurrent
+                          ? 'bg-[#D4AF37] text-[#090A0F] shadow-sm'
+                          : 'bg-[#151827] text-[#A69F91] hover:text-[#F4EFE6] border border-white/5'
+                      }`}
+                    >
+                      <span>{cat.label}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                          isCurrent
+                            ? 'bg-black/20 text-[#090A0F]'
+                            : 'bg-white/5 text-[#8E8779]'
+                        }`}
+                      >
+                        {cat.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Song Cards Grid */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              {(() => {
+                const filtered = PERSIAN_SONGBOOK.filter((entry) => {
+                  const matchesCategory =
+                    songbookCategory === 'all' || entry.era === songbookCategory;
+                  const query = songbookSearch.trim().toLowerCase();
+                  const matchesSearch =
+                    !query ||
+                    entry.title.toLowerCase().includes(query) ||
+                    entry.lyricist.toLowerCase().includes(query) ||
+                    entry.singer.toLowerCase().includes(query) ||
+                    (entry.composer && entry.composer.toLowerCase().includes(query)) ||
+                    (entry.poeticMeter && entry.poeticMeter.toLowerCase().includes(query)) ||
+                    entry.storyNote.toLowerCase().includes(query) ||
+                    entry.lyrics.toLowerCase().includes(query);
+                  return matchesCategory && matchesSearch;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto text-[#8E8779]">
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-semibold text-[#F4EFE6]">
+                        ترانه‌ای با این مشخصات یافت نشد
+                      </p>
+                      <p className="text-xs text-[#8E8779]">
+                        می‌توانید کلمه جستجو یا فیلتر دسته‌بندی را تغییر دهید.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filtered.map((entry) => {
+                      const isCopied = !!copiedMap[`sb-${entry.id}`];
+                      return (
+                        <div
+                          key={entry.id}
+                          className="group rounded-2xl bg-[#131624] border border-white/10 hover:border-[#D4AF37]/50 p-4 transition-all flex flex-col justify-between shadow-md"
+                        >
+                          <div className="space-y-2.5">
+                            {/* Card Top Badges */}
+                            <div className="flex items-center justify-between gap-1 flex-wrap">
+                              <span className="text-[10px] bg-amber-500/10 border border-amber-500/25 text-[#D4AF37] px-2 py-0.5 rounded-lg font-semibold">
+                                {entry.eraLabel}
+                              </span>
+                              {entry.year && (
+                                <span className="text-[10px] text-[#696357] font-mono">
+                                  {entry.year}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Title & Lyricist */}
+                            <div>
+                              <h4 className="text-sm font-bold text-[#F4EFE6] group-hover:text-[#D4AF37] transition-colors">
+                                «{entry.title}»
+                              </h4>
+                              <p className="text-xs text-[#D4AF37] font-semibold flex items-center gap-1.5 mt-1">
+                                <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                <span>ترانه‌سرا: {entry.lyricist}</span>
+                              </p>
+                              <p className="text-[11px] text-[#8E8779] mt-0.5">
+                                با صدای {entry.singer}
+                                {entry.composer ? ` · آهنگساز: ${entry.composer}` : ''}
+                              </p>
+                            </div>
+
+                            {/* Poetic Meter Badge */}
+                            {entry.poeticMeter && (
+                              <div className="p-1.5 rounded-lg bg-[#0C0E17] border border-white/5 text-[11px] text-cyan-300">
+                                ⚖️ <span className="text-[#8E8779]">وزن:</span> {entry.poeticMeter}
+                              </div>
+                            )}
+
+                            {/* Lyrics Preview Snippet */}
+                            <div
+                              onClick={() => setActiveSongbookEntry(entry)}
+                              className="p-2.5 rounded-xl bg-[#090B12] border border-white/5 font-poetic text-xs text-[#C5BFB5] leading-relaxed line-clamp-3 hover:border-white/15 transition-colors cursor-pointer"
+                              title="برای خواندن متن کامل و داستان ترانه کلیک کنید"
+                            >
+                              {entry.lyrics.split('\n').slice(0, 4).join('\n')}
+                            </div>
+                          </div>
+
+                          {/* Card Bottom Actions */}
+                          <div className="pt-3 mt-3 border-t border-white/5 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setActiveSongbookEntry(entry)}
+                              className="flex-1 py-1.5 px-2 rounded-lg bg-[#191D2E] hover:bg-[#232840] border border-white/10 text-[11px] font-semibold text-[#F4EFE6] flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                              title="مشاهده متن کامل و تحلیل ادبی"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#D4AF37]" />
+                              <span>متن و تحلیل</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleApplySongbookInspiration(entry)}
+                              className="py-1.5 px-2.5 rounded-lg bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors shrink-0 shadow-sm"
+                              title="الهام‌گیری و تنظیم استودیو در این سبک"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span className="hidden xs:inline">الهام در استودیو</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(entry.lyrics, `sb-${entry.id}`)}
+                              className="p-1.5 rounded-lg bg-[#191D2E] hover:bg-[#232840] border border-white/10 text-[#8E8779] hover:text-[#F4EFE6] cursor-pointer transition-colors"
+                              title="کپی متن ترانه"
+                            >
+                              {isCopied ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer Note */}
+            <div className="pt-3 border-t border-white/10 text-[11px] text-[#696357] flex items-center justify-between shrink-0">
+              <span>گنجینه ادبی استودیو ترانه سرای فرخزاد · گزیده ترانه‌سرایی ماندگار ایران</span>
+              <button
+                type="button"
+                onClick={() => setIsSongbookOpen(false)}
+                className="text-xs text-[#D4AF37] hover:underline cursor-pointer"
+              >
+                بازگشت به چت و سرایش
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Persian Songbook Single Entry Full Reader Modal */}
+      {activeSongbookEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
+          <div
+            className="fixed inset-0 bg-black/90 backdrop-blur-xs"
+            onClick={() => setActiveSongbookEntry(null)}
+          />
+          <div className="relative z-10 w-full max-w-3xl bg-[#0F121C] border border-[#D4AF37]/60 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Reader Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-[#F4EFE6] flex items-center gap-2">
+                    <span>«{activeSongbookEntry.title}»</span>
+                    <span className="text-xs bg-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded-full font-semibold">
+                      {activeSongbookEntry.lyricist}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[#8E8779] mt-0.5">
+                    با صدای {activeSongbookEntry.singer}
+                    {activeSongbookEntry.composer ? ` · آهنگساز: ${activeSongbookEntry.composer}` : ''}
+                    {activeSongbookEntry.year ? ` · سال: ${activeSongbookEntry.year}` : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveSongbookEntry(null)}
+                className="p-1.5 rounded-lg text-[#8E8779] hover:text-[#F4EFE6] hover:bg-white/5 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Reader Scrollable Content */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {/* Story Note Card */}
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#171A29] to-[#121422] border border-[#D4AF37]/35 text-xs text-[#E2DDD3] space-y-1.5 shadow-md">
+                <div className="flex items-center gap-1.5 text-[#D4AF37] font-bold">
+                  <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                  <span>روایت و تحلیل ادبی شاهکار:</span>
+                </div>
+                <p className="text-[12px] text-[#C5BFB5] leading-relaxed">
+                  {activeSongbookEntry.storyNote}
+                </p>
+              </div>
+
+              {/* Technical / Poetic Specs */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                {activeSongbookEntry.poeticMeter && (
+                  <div className="p-2.5 rounded-xl bg-[#141724] border border-white/10 space-y-0.5">
+                    <span className="text-[10px] text-[#8E8779] block">وزن عروضی / ساختار:</span>
+                    <span className="text-xs font-semibold text-cyan-300">
+                      {activeSongbookEntry.poeticMeter}
+                    </span>
+                  </div>
+                )}
+                {activeSongbookEntry.genre && (
+                  <div className="p-2.5 rounded-xl bg-[#141724] border border-white/10 space-y-0.5">
+                    <span className="text-[10px] text-[#8E8779] block">سبک موسیقی:</span>
+                    <span className="text-xs font-semibold text-[#D4AF37]">
+                      {activeSongbookEntry.genre}
+                    </span>
+                  </div>
+                )}
+                {activeSongbookEntry.dastgahOrKey && (
+                  <div className="p-2.5 rounded-xl bg-[#141724] border border-white/10 space-y-0.5">
+                    <span className="text-[10px] text-[#8E8779] block">دستگاه / گام:</span>
+                    <span className="text-xs font-semibold text-emerald-300">
+                      {activeSongbookEntry.dastgahOrKey}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Full Lyrics Box */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#D4AF37] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>متن کامل ترانه:</span>
+                  </span>
+                  <span className="text-[11px] text-[#8E8779]">
+                    دوره ادبی: {activeSongbookEntry.eraLabel}
+                  </span>
+                </div>
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#090B10] border border-white/10 font-poetic text-sm text-[#F4EFE6] leading-loose whitespace-pre-line shadow-inner select-text">
+                  {activeSongbookEntry.lyrics}
+                </div>
+              </div>
+            </div>
+
+            {/* Reader Bottom Actions */}
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2 flex-wrap shrink-0">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleApplySongbookInspiration(activeSongbookEntry)}
+                  className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-colors"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>الهام‌گیری و سرایش در سبک این ترانه‌سرا</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(
+                      activeSongbookEntry.lyrics,
+                      `sb-read-${activeSongbookEntry.id}`
+                    )
+                  }
+                  className="px-3 py-2 rounded-xl bg-[#161928] hover:bg-[#20253B] border border-white/10 text-xs font-medium text-[#F4EFE6] flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  {copiedMap[`sb-read-${activeSongbookEntry.id}`] ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>کپی شد</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>کپی متن ترانه</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadSongbookEntry(activeSongbookEntry)}
+                  className="px-3 py-2 rounded-xl bg-[#161928] hover:bg-[#20253B] border border-white/10 text-xs font-medium text-[#D4AF37] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="دانلود متن ترانه در فایل متنی"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">دانلود فایل</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveSongbookEntry(null)}
+                className="px-3.5 py-2 rounded-xl bg-[#161824] hover:bg-[#202336] text-[#A69F91] text-xs font-medium cursor-pointer transition-colors"
+              >
+                بستن و بازگشت
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Chat Interface */}
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#090A0F]">
         {/* Header Bar */}
@@ -2528,18 +2691,28 @@ ${song.composerNote}
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-2">
-            {/* Active AI Provider Switcher Pill */}
+            {/* Active AI Studio Farrokhzad Pill */}
+            <div
+              className="px-2.5 py-1 sm:py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/40 shadow-xs"
+              title="هوش سرایش اختصاصی استودیو فرخزاد - خودکار و فعال"
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#D4AF37]" />
+              <span className="hidden sm:inline">هوش سرایش استودیو فرخزاد</span>
+              <span className="sm:hidden">استودیو فرخزاد</span>
+            </div>
+
+            {/* Persian Songbook Header Button */}
             <button
               type="button"
-              onClick={() => setShowKeyModal(true)}
-              className={`px-2.5 py-1 sm:py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                getProviderBadge(openrouterModel).bg
-              }`}
-              title="تنظیم کلید OpenRouter و تغییر مدل هوش مصنوعی"
+              onClick={() => setIsSongbookOpen(true)}
+              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#D4AF37]/20 to-amber-500/15 hover:from-amber-500/25 hover:to-[#D4AF37]/30 text-[#D4AF37] border border-[#D4AF37]/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title="کتاب ترانه: گزیده ترانه‌های ماندگار ترانه‌سراهای بزرگ ایران از قدیم تا جدید"
             >
-              <Cpu className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">{getProviderBadge(openrouterModel).label}</span>
-              <span className="sm:hidden">{getProviderBadge(openrouterModel).short}</span>
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">کتاب ترانه</span>
+              <span className="w-4 h-4 rounded-full bg-[#D4AF37] text-black text-[10px] font-extrabold flex items-center justify-center">
+                {PERSIAN_SONGBOOK.length}
+              </span>
             </button>
 
             {/* History Archive Quick Access Button */}
@@ -2719,22 +2892,11 @@ ${song.composerNote}
                       <div className="pt-2 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setShowKeyModal(true)}
-                          className="px-3 py-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-900/60 border border-rose-500/40 text-xs font-semibold text-rose-200 flex items-center gap-1.5 cursor-pointer"
+                          onClick={() => handleSendMessage()}
+                          className="px-3 py-1.5 rounded-lg bg-[#D4AF37] hover:bg-[#E5C354] text-[#090A0F] font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
                         >
-                          <Key className="w-3.5 h-3.5" />
-                          <span>تنظیم و بررسی کلید API</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenrouterModel('meta-llama/llama-3.3-70b-instruct:free');
-                            handleSendMessage();
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-[#181B26] hover:bg-[#202433] border border-white/10 text-xs text-[#D4AF37] flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>تلاش مجدد با مدل رایگان (Llama 3.3 Free)</span>
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>تلاش مجدد با هوش استودیو</span>
                         </button>
                       </div>
                     </div>
@@ -2746,7 +2908,7 @@ ${song.composerNote}
               if (!res) return null;
 
               const prevUserMsg = activeSession.messages[index - 1]?.text || activeSession.title;
-              const sourceBadge = getProviderBadge(msg.source || openrouterModel);
+              const sourceBadge = getProviderBadge(msg.source);
 
               return (
                 <div key={msg.id} className="flex justify-start">
@@ -2759,12 +2921,15 @@ ${song.composerNote}
                           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${sourceBadge.bg}`}>
                             {sourceBadge.label}
                           </span>
-                          {msg.warning && (
-                            <span className="text-[10px] text-amber-400 bg-amber-950/30 px-2 py-0.5 rounded border border-amber-500/30">
-                              موتور اضطراری استودیو
-                            </span>
-                          )}
                         </div>
+
+                        {/* Notice Banner */}
+                        {msg.warning && (
+                          <div className="mb-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-2 text-xs">
+                            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span className="text-[11px] text-[#E2DDD3] leading-relaxed">{msg.warning}</span>
+                          </div>
+                        )}
 
                         {/* Song Details Badges */}
                         <div className="flex flex-wrap items-center gap-1.5 text-xs text-[#D4AF37] font-medium">
@@ -3063,7 +3228,7 @@ ${song.composerNote}
                   </div>
                   <div className="text-xs">
                     <span className="font-bold text-[#F4EFE6] block">
-                      شاعر و آهنگساز هوش مصنوعی ({getProviderBadge(openrouterModel).short}) در حال سرایش ترانه در سبک «{activeGenreObj.short}» است...
+                      شاعر و آهنگساز هوش مصنوعی (استودیو فرخزاد) در حال سرایش ترانه در سبک «{activeGenreObj.short}» است...
                     </span>
                     <span className="text-[#8E8779]">
                       تنظیم وزن، ریتم، قافیه‌ها، تگ‌های تخصصی انگلیسی سونو و پرامپت اختصاصی موزیک
@@ -3096,7 +3261,7 @@ ${song.composerNote}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>
-                  تنظیمات سبک و آهنگ ({activeGenreObj.short} · {selectedSongType.split('(')[0].trim()} · {selectedTempo.split('(')[0].trim()} · {selectedVocal.split('(')[0]})
+                  تنظیمات سبک و آهنگ ({activeGenreObj.short} · {selectedSongType.split('(')[0].trim()}{selectedInstruments.length > 0 ? ` · ${selectedInstruments.length} ساز` : ''} · {selectedTempo.split('(')[0].trim()} · {selectedVocal.split('(')[0]})
                 </span>
                 <ChevronDown
                   className={`w-3 transformation transition-transform ${
@@ -3106,14 +3271,10 @@ ${song.composerNote}
               </button>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowKeyModal(true)}
-                  className="text-[11px] text-[#A69F91] hover:text-[#D4AF37] flex items-center gap-1 cursor-pointer"
-                >
-                  <Key className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span>تنظیم کلید هوش مصنوعی ({getProviderBadge(openrouterModel).short})</span>
-                </button>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#A69F91]">
+                  <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+                  <span>هوش اختصاصی استودیو (خودکار)</span>
+                </div>
                 <span className="text-[#696357]">|</span>
                 <div className="flex items-center gap-1 text-[11px] text-[#A69F91]">
                   <Globe className="w-3 h-3 text-[#D4AF37]" />
@@ -3155,6 +3316,21 @@ ${song.composerNote}
 
                   <button
                     type="button"
+                    onClick={() => setActiveOptionTab('instruments')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
+                      activeOptionTab === 'instruments'
+                        ? 'bg-[#D4AF37] text-[#090A0F]'
+                        : 'text-[#A69F91] hover:text-[#F4EFE6] hover:bg-white/5'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3 h-3" />
+                    <span>
+                      ۳. سازبندی و نوع ساز {selectedInstruments.length > 0 ? `(${selectedInstruments.length} ساز)` : '(خودکار)'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setActiveOptionTab('tempo')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
                       activeOptionTab === 'tempo'
@@ -3163,7 +3339,7 @@ ${song.composerNote}
                     }`}
                   >
                     <Gauge className="w-3 h-3" />
-                    <span>۳. تمپو و BPM</span>
+                    <span>۴. تمپو و BPM</span>
                   </button>
 
                   <button
@@ -3176,7 +3352,7 @@ ${song.composerNote}
                     }`}
                   >
                     <Heart className="w-3 h-3" />
-                    <span>۴. حس آهنگ</span>
+                    <span>۵. حس آهنگ</span>
                   </button>
 
                   <button
@@ -3189,7 +3365,7 @@ ${song.composerNote}
                     }`}
                   >
                     <Mic className="w-3 h-3" />
-                    <span>۵. خواننده</span>
+                    <span>۶. خواننده</span>
                   </button>
 
                   <button
@@ -3202,7 +3378,7 @@ ${song.composerNote}
                     }`}
                   >
                     <Globe className="w-3 h-3" />
-                    <span>۶. زبان‌ها</span>
+                    <span>۷. زبان‌ها</span>
                   </button>
                 </div>
 
@@ -3265,7 +3441,107 @@ ${song.composerNote}
                   </div>
                 )}
 
-                {/* Tab 3: Tempo */}
+                {/* Tab 3: Instruments (سازبندی و نوع ساز) */}
+                {activeOptionTab === 'instruments' && (
+                  <div className="space-y-2.5 animate-in fade-in duration-150">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[#8E8779] text-[11px]">
+                        انتخاب ۳۰ ساز تخصصی (ایرانی، کوبه‌ای، غربی و الکترونیک) برای همنوازی با ترانه و پرامپت دقیق سونو:
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInstruments([])}
+                          className={`text-[11px] px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                            selectedInstruments.length === 0
+                              ? 'bg-[#D4AF37] text-[#090A0F] font-bold'
+                              : 'bg-white/5 text-[#A69F91] hover:text-[#F4EFE6]'
+                          }`}
+                        >
+                          ترکیب خودکار با سبک (Auto)
+                        </button>
+                        {selectedInstruments.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedInstruments([])}
+                            className="text-[11px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 cursor-pointer transition-colors"
+                          >
+                            پاک کردن همه ({selectedInstruments.length})
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filter categories */}
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <span className="text-[#696357]">دسته‌بندی:</span>
+                      {[
+                        { id: 'all', label: 'همه سازها (۳۰)' },
+                        { id: 'iranian', label: 'اصیل ایرانی (۱۰)' },
+                        { id: 'percussion', label: 'کوبه‌ای و ضربی (۶)' },
+                        { id: 'western', label: 'غربی و الکترونیک (۱۴)' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setInstrumentCategoryFilter(cat.id as any)}
+                          className={`px-2 py-0.5 rounded-md text-[11px] cursor-pointer transition-colors ${
+                            instrumentCategoryFilter === cat.id
+                              ? 'bg-[#D4AF37]/20 text-[#D4AF37] font-bold border border-[#D4AF37]/50'
+                              : 'text-[#8E8779] hover:text-[#F4EFE6] bg-[#161926]'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Instrument chips grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto p-1 rounded-lg bg-[#0E1017] border border-white/5">
+                      {INSTRUMENT_OPTIONS.filter((inst) =>
+                        instrumentCategoryFilter === 'all' ? true : inst.category === instrumentCategoryFilter
+                      ).map((inst) => {
+                        const isSelected = selectedInstruments.includes(inst.name);
+                        return (
+                          <button
+                            key={inst.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedInstruments((prev) =>
+                                prev.includes(inst.name)
+                                  ? prev.filter((n) => n !== inst.name)
+                                  : [...prev, inst.name]
+                              );
+                            }}
+                            className={`p-2 rounded-lg text-right transition-all cursor-pointer flex flex-col justify-between border ${
+                              isSelected
+                                ? 'bg-gradient-to-r from-amber-500/20 to-[#D4AF37]/25 text-[#F4EFE6] border-[#D4AF37]/60 shadow-xs'
+                                : 'bg-[#151824] text-[#A69F91] hover:text-[#F4EFE6] hover:bg-[#1A1E2D] border-white/5'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1 w-full">
+                              <span className="font-bold text-xs truncate">{inst.name}</span>
+                              <div
+                                className={`w-4 h-4 rounded flex items-center justify-center shrink-0 text-[10px] ${
+                                  isSelected
+                                    ? 'bg-[#D4AF37] text-black font-extrabold'
+                                    : 'border border-white/20'
+                                }`}
+                              >
+                                {isSelected ? '✓' : ''}
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-[#7A756B] truncate mt-0.5 block" dir="ltr">
+                              {inst.englishTag}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 4: Tempo */}
                 {activeOptionTab === 'tempo' && (
                   <div className="space-y-1.5 animate-in fade-in duration-150">
                     <span className="text-[#8E8779] text-[11px] block">
@@ -3294,7 +3570,7 @@ ${song.composerNote}
                   </div>
                 )}
 
-                {/* Tab 4: Mood */}
+                {/* Tab 5: Mood */}
                 {activeOptionTab === 'mood' && (
                   <div className="space-y-1.5 animate-in fade-in duration-150">
                     <span className="text-[#8E8779] text-[11px] block">
@@ -3323,7 +3599,7 @@ ${song.composerNote}
                   </div>
                 )}
 
-                {/* Tab 5: Vocals */}
+                {/* Tab 6: Vocals */}
                 {activeOptionTab === 'vocal' && (
                   <div className="space-y-1.5 animate-in fade-in duration-150">
                     <span className="text-[#8E8779] text-[11px] block">
@@ -3352,7 +3628,7 @@ ${song.composerNote}
                   </div>
                 )}
 
-                {/* Tab 6: Languages */}
+                {/* Tab 7: Languages */}
                 {activeOptionTab === 'lang' && (
                   <div className="space-y-2 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between">

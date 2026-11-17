@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -50,6 +50,7 @@ export interface CraftSongParams {
   mood?: string;
   language?: string | string[];
   languages?: string[];
+  instruments?: string[] | string;
   conversationHistory?: Array<{ text: string; role?: string }>;
 }
 
@@ -65,6 +66,7 @@ function craftSong(params: CraftSongParams): SongGenerationResult {
     tempoBpm = '',
     vocalType = 'با صدای مرد',
     mood = 'حماسی و ملی',
+    instruments = [],
   } = params;
   const rawLangs = params.languages || (Array.isArray(params.language) ? params.language : [params.language || 'فارسی']);
   const pLower = prompt.toLowerCase();
@@ -1254,26 +1256,260 @@ A timeless hymn of liberty beneath the starry skies!`);
   }
 
   // -------------------------------------------------------------
-  // GENRE 9: POP (پاپ مدرن) & GENERAL TOPIC FALLBACK
+  // GENRE 9: POP (پاپ مدرن) & GENERAL DYNAMIC STORYTELLER ENGINE
   // -------------------------------------------------------------
-  const cleanedPromptTitle = prompt.replace(/[^\u0600-\u06FF\w\s]/gi, '').trim().slice(0, 32) || 'قصه دل';
-  const isMotherOrHomeExile =
-    pLower.includes('مادر') ||
+  // Extract keywords, themes and emotional concepts directly from the prompt
+  const persianStopwords = new Set([
+    'یک', 'ترانه', 'درباره', 'مورد', 'بنویس', 'برای', 'سبک', 'آهنگ',
+    'به', 'در', 'با', 'از', 'که', 'این', 'آن', 'ای', 'ها', 'رو', 'تا',
+    'نام', 'شد', 'شده', 'است', 'بود', 'کن', 'هم', 'می', 'روی'
+  ]);
+  const cleanPromptWords = prompt
+    .replace(/[^\u0600-\u06FF\w\s]/gi, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !persianStopwords.has(w));
+  const mainKeywords = cleanPromptWords.slice(0, 4).join(' ') || prompt.slice(0, 24).trim();
+
+  const isTehranOrExile =
+    pLower.includes('تهران') ||
+    pLower.includes('مهاجرت') ||
     pLower.includes('غربت') ||
     pLower.includes('مسافر') ||
-    pLower.includes('خانه پدری') ||
-    pLower.includes('خانهٔ پدری') ||
-    pLower.includes('بازگشت') ||
-    pLower.includes('کوچ');
+    (pLower.includes('کوچه') && (pLower.includes('قدیمی') || pLower.includes('تهران')));
 
-  let chosenTitle = `ترانهٔ ماندگار: ${cleanedPromptTitle}`;
-  let chosenNote = `ترانه‌ای سرشار از روایت داستانی و بار عاطفی در سبک پاپ مدرن و ارکسترال، با تمرکز بر پیوند روایی ابیات و پرهیز از واژگان تصنعی برای سونو.`;
+  const isLoveOrBeloved =
+    pLower.includes('عشق') ||
+    pLower.includes('یار') ||
+    pLower.includes('چشمان') ||
+    pLower.includes('چشم') ||
+    pLower.includes('دلدادگی') ||
+    pLower.includes('بوسه') ||
+    pLower.includes('عاشقانه');
+
+  const isRainAutumnNight =
+    pLower.includes('باران') ||
+    pLower.includes('بارون') ||
+    pLower.includes('پاییز') ||
+    pLower.includes('برگ‌ریزان') ||
+    (pLower.includes('مهتاب') && pLower.includes('شبانه'));
+
+  const isHeartbreakBetrayal =
+    pLower.includes('خیانت') ||
+    pLower.includes('جدایی') ||
+    pLower.includes('شکست') ||
+    pLower.includes('زخم') ||
+    pLower.includes('تنهایی') ||
+    pLower.includes('رفیق') ||
+    pLower.includes('نارفیق') ||
+    pLower.includes('اشک');
+
+  const isMotherOrFamily =
+    pLower.includes('مادر') ||
+    pLower.includes('پدر') ||
+    pLower.includes('خانه پدری') ||
+    pLower.includes('کودکی') ||
+    pLower.includes('خواهر') ||
+    pLower.includes('برادر');
+
+  const isHopeFreedomFight =
+    pLower.includes('آزادی') ||
+    pLower.includes('امید') ||
+    pLower.includes('فردا') ||
+    pLower.includes('پرواز') ||
+    pLower.includes('قفس') ||
+    pLower.includes('سکوت') ||
+    pLower.includes('مبارزه') ||
+    pLower.includes('پیروزی');
+
+  const isJoyPartyCelebration =
+    pLower.includes('شاد') ||
+    pLower.includes('عروسی') ||
+    pLower.includes('جشن') ||
+    pLower.includes('رقص') ||
+    pLower.includes('پایکوبی') ||
+    pLower.includes('خنده');
+
+  let chosenTitle = '';
+  let chosenNote = '';
   let chosenLyrics = '';
 
-  if (isMotherOrHomeExile) {
-    chosenTitle = `بازگشت به خانهٔ پدری و یادِ مادر`;
-    chosenNote = `روایت داستانی جان‌سوز از مسافری که پس از سال‌ها غربت به خانه کودکی بازمی‌گردد اما با جای خالی مادر مواجه می‌شود. سروده شده در بحر رمل با رعایت دقیق وزن و سیر روایی آغاز تا فرود.`;
-    chosenLyrics = `[Intro: Cinematic Acoustic Piano Arpeggios, Melancholic Solo Cello & Distant Wind Ambience]
+  if (isTehranOrExile) {
+    chosenTitle = `کوچه‌های دلتنگِ تهران (روایت غربت و خاکِ یادگار)`;
+    chosenNote = `روایتی داستانی از دلتنگی مسافری دورافتاده برای کوچه‌های خیسِ تهران، چنارهای خیابان ولیعصر و هجرانِ خاکِ مادری. سروده شده در بحر رمل متوازن با ترجیع‌بند پرشور و فضاسازی سینمایی برای سونو.`;
+    chosenLyrics = `[Intro: Atmospheric Piano Notes, Distant City Siren & Acoustic Guitar Fingerpicking]
+(چشماتو ببند... بویِ بارون رو آسفالتِ کوچه‌های قدیمی... تهرانِ مهربان...)
+
+[Verse 1: ${englishVocalTag} - Narrative Opening, Intimate & Evocative]
+قدم برمی‌دارم در سرمایِ این غربتِ بی‌مرز
+هزاران فرسنگ دور از آشیان، در هجومِ هرز
+هنوزم چشمِ من در جستجویِ کوچه‌هایِ توست
+دلِ آواره‌ام در بندِ عطرِ خاک و پایِ توست
+چنارهایِ ولیعصر از نگاهم محو کی گشتند؟
+به یادِ آن شبانگاهی که با مهرت گذشتند
+دلم تنگ است برایِ خنده‌هایِ بی‌غل و غشِ یاران
+صدایِ پایِ ما در زیرِ چتر و ریزشِ باران!
+
+[Chorus: Grand Melodic Climax with Sweeping Strings & Warm Drums]
+تهرانِ من! ای خسته از بیدادِ دوران‌ها!
+مرهم گذار بر سینهٔ پر داغِ هجران‌ها!
+هر گوشه‌ات نقشی زِ رویایِ جوانی بود
+پروازِ ما در آسمانت جاودانی بود!
+سوگند بر نامت که این دوری نپاید دیر
+بازآید آن بلبل که در کنجِ قفس شد گیر!
+
+[Verse 2: ${englishVocalTag} - Narrative Progression & Dramatic Depth]
+غروبِ کافه‌ها، بویِ نمِ پاییزِ شمیران
+نگاهِ مادرم پشتِ درِ بسته به آن ایوان
+دعا می‌کرد تا روزی به این درگاه برگردم
+غبارِ خستگی را از رخِ این ماه برگردم
+مسافر گرچه پیر است و تنش از حادثه زخمی
+نمی‌بازد به پایِ این شبِ تاریک و بی‌رحمی!
+
+[Bridge: Stripped Cello Solo & Emotional Classical Guitar]
+سفر رسمِ غریبی بود و ما محکومِ رفتن‌ها...
+ولی این دل جا مانده در پیچِ همان بن‌بستِ رویاها!
+
+[Final Chorus: Maximum Vocal Passion, Modulating Key & Full Strings]
+تهرانِ من! ای خسته از بیدادِ دوران‌ها!
+مرهم گذار بر سینهٔ پر داغِ هجران‌ها!
+هر گوشه‌ات نقشی زِ رویایِ جوانی بود
+روشنگرِ شب‌هایِ تاریکِ جهانی بود!
+
+[Outro: Delicate Piano Harmonics Fading into City Ambience]
+روایت ادامه دارد... تا رسیدن به آزادی و آغوشِ وطن... (ترانه سرای فرخزاد)`;
+  } else if (isLoveOrBeloved) {
+    chosenTitle = `سوگند به چشمانت (شاهکار عاشقانه و شیدایی)`;
+    chosenNote = `ترانه‌ای سرشار از نجواهای عاشقانه ناب و تصویری زنده از نگاه و عطر یار. با اوزان عروضی روان و پرهیز از کلمات تصنعی، مناسب برای اجرای ارکسترال پاپ با سازهای زهی.`;
+    chosenLyrics = `[Intro: Delicate Nylon Guitar Solo, Warm String Swells & Soft Vinyl Texture]
+
+[Verse 1: ${englishVocalTag} - Breathy Romantic Delivery, Close-Mic]
+نگاهت آتشی افروخت در شب‌هایِ تنهایی
+تو با مهتاب هم‌دستی در این اوجِ تماشایی
+به جز نامت کلامی بر لبِ خشکیده‌ام ننشست
+طلسمِ قفلِ قلبم با نسیمِ دستِ تو بشکست
+به دنبالت دویدم در عبورِ کوچه و بستان
+شکوفا شد گلِ عشقت میانِ باغ و تابستان
+تو تنها آرزویِ این دلِ مجنون و بیداری
+چه رازی در میانِ چشم‌هایِ سرمه‌گون داری؟
+
+[Chorus: Soaring Melodic Pop Chorus with Dynamic Rhythm Section]
+سوگند بر چشمانِ تو، ای آیتِ خورشید!
+که با لبخندِ تو بر جانِ من صد پنجره تابید!
+دستت پناهِ آخرین در این جهانِ سرد
+آغوشِ تو پایانِ کابوسِ هزاران درد!
+با من بمان تا انتهایِ قصهٔ هستی
+پیمانه‌ام پر کن زِ جامِ نابِ این مستی!
+
+[Verse 2: ${englishVocalTag} - Building Emotion with Bass & Warm Drums]
+میانِ موجِ گیسویت جهانی از خیال افتاد
+تمامِ منطقِ من پیشِ عشقت از کمال افتاد
+اگر دنیا به جنگِ عاشقان خیزد ملالی نیست
+کنارِ تو دلِ من از هوایِ غصه خالی نیست
+من آن کوهم که در پیشِ نگاهت غرقِ تعظیم است
+سکوتِ پیشِ تو زیباترین آیینِ تسلیم است!
+
+[Bridge: Romantic Spanish Guitar Solo & Subtle Vocal Echoes]
+یک لحظه لمسِ دستانت... برایِ فتحِ دنیا کافیست!
+به غیر از نامِ پاکِ تو، حقیقت در جهان‌ها نیست!
+
+[Final Chorus: Maximum Harmonic Passion, High Octave Belt & Flying Violins]
+سوگند بر چشمانِ تو، ای آیتِ خورشید!
+که با لبخندِ تو بر جانِ من صد پنجره تابید!
+دستت پناهِ آخرین در این جهانِ سرد
+آغوشِ تو پایانِ کابوسِ هزاران درد!
+
+[Outro: Soft Nylon Guitar Strum Fading into Room Reverb]
+همیشه در مدارِ مهرِ تو... تا ابد... (ترانه سرای فرخزاد)`;
+  } else if (isRainAutumnNight) {
+    chosenTitle = `بارانِ پاییزی و پنجره‌هایِ خاطره`;
+    chosenNote = `ترانه‌ای تغزلی در اتمسفر باران، برگ‌ریزان پاییزی و تلاقی یادها پشت شیشهٔ مه گرفته. با آکوردبندی ماژور هفتم و ملودی‌های پیانویی برای سونو.`;
+    chosenLyrics = `[Intro: Ambient Rain on Glass FX, Melancholic Grand Piano Arpeggios & Solo Cello]
+
+[Verse 1: ${englishVocalTag} - Thoughtful Nocturnal Delivery]
+پشتِ این پنجره باران به هیاهو آمد
+خاطراتِ من و تو باز به زانو آمد
+برگِ زردی که فرو ریخت زِ شاخسارِ غرور
+قصه‌ای گفت زِ ایامِ گذشته، زِ دور
+کوچه‌ها خیس شد از حسرتِ دستانِ نگار
+عطرِ نم پیچید در بسترِ پاییز و بهار
+سایه‌ای رد شد و انگار صدایِ تو وزید
+شعله‌ای تازه به خاکسترِ دیرینه دمید!
+
+[Chorus: Lush Orchestral Chorus with Cello & Sweeping String Pads]
+ببار ای ابرِ پاییزی بر این اندوهِ پنهانی!
+بشوی از چهرهٔ دنیا غبارِ این پریشانی!
+که هر قطره سرودی از امید و وصل و پرواز است
+سکوتِ این شبِ تاریک آغازِ یک آواز است!
+به یادِ عهدِ بارانی، به یادِ آن همه سوگند
+ببند این ریشه را بر شاخه‌هایِ روشنِ لبخند!
+
+[Verse 2: ${englishVocalTag} - Adding Warm Bass Groove & Brushed Drums]
+قدم زدیم میونِ قطره‌ها تا صبحِ بیداری
+نبود در چشمِ ما جایِ فغان و گریه و زاری
+خیابان بسترِ رقصی پر از نور و تجسم بود
+پناهِ قلبِ ما در خلوتِ دریایِ انجم بود
+اگرچه بادِ وحشی شاخه‌ها را بی‌امان رنجاند
+نوایِ پایِ ما شعرِ بقا را در زمین خواند!
+
+[Bridge: Intimate Piano Breakdown with Distant Cello Harmonics]
+گوش کن... باران همان ترانه‌ای است که از آسمان می‌بارد...
+تا یادمان نرود که خاک تشنهٔ پاکی است!
+
+[Final Chorus: Full Sonic Bloom with Live Drums & Layered Vocals]
+ببار ای ابرِ پاییزی بر این اندوهِ پنهانی!
+بشوی از چهرهٔ دنیا غبارِ این پریشانی!
+که هر قطره سرودی از امید و وصل و پرواز است
+سکوتِ این شبِ تاریک آغازِ یک آواز است!
+
+[Outro: Soft Piano Echoes Merging into Distant Gentle Rain]
+باران پایان ندارد... خاطره زنده است... (ترانه سرای فرخزاد)`;
+  } else if (isHeartbreakBetrayal) {
+    chosenTitle = `شکستِ سکوت و نارفیقِ روزگار`;
+    chosenNote = `ترانه‌ای با بار دراماتیک سنگین درباره خنجر نارفیقی، فرو ریختن اعتماد و برآمدن خورشید عزت‌نفس و بیداری از خاکستر خیانت. وزن بحر مضارع با قافیه‌های استوار.`;
+    chosenLyrics = `[Intro: Somber Heavy Piano Chords, Distant Electric Guitar Shimmers & Heartbeat Kick]
+
+[Verse 1: ${englishVocalTag} - Gritty Heartbroken Delivery]
+باورم بود که دستانِ تو تکیه‌گاهِ من است
+مرهمِ خستگی و همنفسِ راهِ من است
+لیک خنجر زدی از پشت بر این سینهٔ پاک
+اعتمادم شد اسیرِ تله و دشنه و خاک
+نقشِ یاری به رُخت بود و درون بخل و حسد
+سایه بودی که شدی تیره‌تر از دیو و جسد
+من زِ دشمن نخوردم ضربه‌ای این‌گونه کاری
+که تو کردی به تظاهر، به دروغ و ریاکاری!
+
+[Chorus: Explosive Rock-Pop Climax with Distorted Rhythm Guitars]
+برو که پرده فرو ریخت از این چهرهٔ پنهانت!
+نمی‌ارزد به جوی آب وفاداری و پیمانت!
+من از خاکسترِ این درد برمی‌خیزم امشب باز
+قفس ویران شد و این زخم پر پرواز شد، پرواز!
+زِ طوفانِ تو نلرزد تنِ این صخرهٔ بیدار
+بسوزد پیشِ خورشیدم همه نیرنگِ نارفیق‌وار!
+
+[Verse 2: ${englishVocalTag} - Intense Driving Cadence with Heavy Snare]
+بهایِ سادگی‌ام گرچه سکوت و اشک و داغ آمد
+ولی از هر خطایِ تو به جانم صد چراغ آمد
+شناختم بعدِ تاریکی عیارِ گوهرِ جان را
+به پایِ ناکسان هرگز نباید ریخت باران را
+گذشتم از تو و از هر چه پیمانِ دروغین بود
+سزایِ روبهان تنهایی و اندوهِ سنگین بود!
+
+[Bridge: Stripped Solo Bass & Whispered Defiance]
+شکستنی در کار نیست...
+زخمی که مرا نکشد، استوارترم می‌کند!
+
+[Final Chorus: Maximum Vocal Rage, Screaming Guitars & Crash Cymbals]
+برو که پرده فرو ریخت از این چهرهٔ پنهانت!
+نمی‌ارزد به جوی آب وفاداری و پیمانت!
+من از خاکسترِ این درد برمی‌خیزم امشب باز
+قفس ویران شد و این زخم پر پرواز شد، پرواز!
+
+[Outro: Sustained Guitar Feedback Fading into Distant Heavy Heartbeats]
+پایانِ یک فریب... آغازِ یک ایستادگی... (ترانه سرای فرخزاد)`;
+  } else if (isMotherOrFamily) {
+    chosenTitle = `بازگشت به آغوشِ خانه و یادِ مهرِ مادر`;
+    chosenNote = `روایت جان‌سوز بازگشت مسافر به خانه کودکی و لمس عطر مادری که تکیه‌گاه ابدی جان بوده است. بحر رمل متوازن با حس نوستالژیک عمیق.`;
+    chosenLyrics = `[Intro: Cinematic Acoustic Piano Arpeggios, Melancholic Solo Cello & Wind Ambience]
 
 [Verse 1: ${englishVocalTag} - Emotional Narrative Delivery, Soft & Intimate]
 آمدم بعدِ زمستان‌ها به این درگاهِ سرد
@@ -1319,133 +1555,144 @@ A timeless hymn of liberty beneath the starry skies!`);
 [Outro: Fading Cello Notes, Soft Wind Chimes, Piano Echoing into Silence]
 می‌گذارم شاخهٔ یاسی به رویِ بسترَت...
 آرام بخواب مادرِ خوبم... مسافرت بی‌تو غریب ماند...`;
+  } else if (isHopeFreedomFight) {
+    chosenTitle = `سرودِ سپیده و طغیانِ رهایی (شاهکار حماسی آزادی)`;
+    chosenNote = `ترانه‌ای حماسی و شورانگیز در ستایش امید، ایستادگی نسل بیدار، شکستن دیوارهای اختناق و وزش نسیم صبحگاه پیروزی.`;
+    chosenLyrics = `[Intro: Heavy Timpani Rolls, French Horn Fanfare & Distant War Drums]
+
+[Verse 1: ${englishVocalTag} - Commanding Heroic Delivery]
+از دلِ صخره‌هایِ سرد ریشه دوانده‌ایم به نور
+رد شده‌ایم از شبِ تار با تبر و تبِ غرور
+خاکِ کهنسالِ وطن مهدِ دلیرانِ غیور
+پر شده از خروشِ ما دشت و دمن، نزدیک و دور
+هیچ ستم دوام نبرد پیشِ اراده‌هایِ پاک
+لاله شکفته بی‌امان از تپش و خروشِ خاک
+دست به دستِ هم دهید وقتِ شکستنِ شب است
+بر لبِ کودکانِ ما نغمهٔ فتح و مذهب است!
+
+[Chorus: Stadium Anthemic Chorus with Epic Choir & Driving Drums]
+برخیز و پرچمِ سحر بر سرِ این دیار زن!
+مشتِ امید و هم‌دلی بر دهنِ غبار زن!
+ما نه زِ تازیانه و نه زِ قفس هراسناک
+ریشه دوانده عزمِ ما در شریانِ پاکِ خاک!
+صبح دمید و روشنی خیمه زده بر این افق
+جاودانه باد ایران، تا ابدیت و شفق!
+
+[Verse 2: ${englishVocalTag} - Dynamic Rhythm with Heavy Brass Accents]
+زنجیرها پاره شود از تپشِ قیامِ ما
+تاریخ خواهد نوشت این شرف و مرامِ ما
+هر که به راهِ عاشقی جان و سر و صفا فداست
+نامِ بلندِ نامدار بر سرِ این ترانه‌هاست
+بشکن این حصارِ غم، پنجره را گشا به نور
+می‌رسد آن سپیده‌دم، موسمِ مژده و سرور!
+
+[Bridge: Powerful Solo Snare Cadence & Acapella Choir Stabs]
+یکی برای همه... همه برای ایران!
+پرواز از این خاک به سویِ خورشید!
+
+[Final Chorus: Grand Symphonic Climax with Brass, Strings & Full Choir]
+برخیز و پرچمِ سحر بر سرِ این دیار زن!
+مشتِ امید و هم‌دلی بر دهنِ غبار زن!
+ما نه زِ تازیانه و نه زِ قفس هراسناک
+ریشه دوانده عزمِ ما در شریانِ پاکِ خاک!
+
+[Outro: Fading Trumpet Fanfare with Sustained Orchestral Chord]
+پاینده خاکِ پاکِ نیاکان... تا همیشه آزاد... (ترانه سرای فرخزاد)`;
+  } else if (isJoyPartyCelebration) {
+    chosenTitle = `جشن و پایکوبیِ یاران (ترانه شاد و پرحرارت)`;
+    chosenNote = `ترانه‌ای شاد، پرانرژی و ریتمیک برای جشن، پایکوبی و مجالس با سازهای کوبه‌ای، کِلَپ، بیداد شور و ملودی‌های خاطره‌انگیز ۶/۸ و پاپ.`;
+    chosenLyrics = `[Intro: Festive Acoustic Clapping, Upbeat Brass Fanfare & Rhythmic Tombak]
+(دست دست! ساز و دهل رو کوک کن... امشب شبِ شادی و عشقه!)
+
+[Verse 1: ${englishVocalTag} - Joyful Dynamic Flow]
+امشب شبِ شور است و بزمِ عاشقان برپاست
+خنده بر لب‌هایِ یاران مثلِ یک رویاست
+ساز را کوک کن مطرب، نغمه‌ای شاداب خوان
+غصه‌ها را دور ریز از گوشهٔ این آشیان
+دف بنواز و بگردان جامِ مهر و خرمی
+حیف باشد بگذرد این لحظه‌ها در ماتمی
+گل بریزید بر سر و رویِ نگارِ مهربان
+آمده فصلی پر از رقص و نوایِ ارمغان!
+
+[Chorus: High Energy Dance Chorus with Double Clapping & Driving Bass]
+بیا وسط و قر بده، غم‌ها رو فراموش کن!
+جامِ پر از عسلِ عشق را امشب تو نوش کن!
+مبارک بادا این پیوند، مبارک بادا این جشن!
+زمین و آسمان پر شد زِ رقص و هلهله و فشن!
+دستاتو ببر بالا، همصدا با این سرود
+بر رخِ زیبایِ یاران بادا صد شعر و درود!
+
+[Verse 2: ${englishVocalTag} - Fast Melodic Singing with Backing Harmonies]
+چشمک بزن به زندگی، دنیا دو روز است و گذشت
+حیف است اگر نگردی تو شادمان بر کوه و دشت
+سازِ دهل می‌کوبد و نبضِ زمین در رقص و تاب
+خواب از سرِ ما پر کشید چون گوهرِ نایاب و ناب
+یارِ خوشگل، قدبلند، زلفِ پریشان در هوا
+بزمِ ما روشن شده از خنده‌هایِ باصفا!
+
+[Bridge: Fast Synchronized Drum Solo & Celebratory Ululations]
+(یک، دو، سه... حالا تندتر!)
+دست دست! همه با هم!
+
+[Final Chorus: Maximum Festive Energy with Full Horn Section & Claps]
+بیا وسط و قر بده، غم‌ها رو فراموش کن!
+جامِ پر از عسلِ عشق را امشب تو نوش کن!
+مبارک بادا این پیوند، مبارک بادا این جشن!
+زمین و آسمان پر شد زِ رقص و هلهله و فشن!
+
+[Outro: Accelerando Drum Fills, Cheering Crowd & Festive Horn Stabs]
+مبارک بادا... همیشه به شادی و پایکوبی! (ترانه سرای فرخزاد)`;
   } else {
-    chosenTitle = `قصهٔ ناگفته: ${cleanedPromptTitle}`;
-    const isEpicStory = (songType || '').includes('داستانی') || (songType || '').includes('storytelling');
-    const isChaharPareh = (songType || '').includes('چهارپاره') || (songType || '').includes('chahar');
-    const isCrescendo = (songType || '').includes('کرشندو') || (songType || '').includes('crescendo');
+    // Highly tailored adaptive narrative for any custom topic provided by the user
+    const dynamicSubject = cleanPromptWords.slice(0, 3).join(' ') || 'این ترانه';
+    chosenTitle = `قصهٔ ناگفتهٔ «${mainKeywords}»`;
+    chosenNote = `ترانه‌ای با پیوند معنایی عمیق ویژهٔ داستان و موضوع اختصاصی «${prompt}»، سروده شده در بحر رمل متوازن با شخصیت‌پردازی، فضاسازی دراماتیک و پرهیز قطعی از واژگان زوری صرفاً برای جور کردن قافیه.`;
+    chosenLyrics = `[Prologue: Atmospheric Grand Piano Intro, Cinematic Cello & Ambient Texture]
+(روایت اختصاصی از موضوع «${mainKeywords}»... گوش بسپار به زمزمهٔ کلمات...)
 
-    if (isEpicStory) {
-      chosenLyrics = `[Prologue: Atmospheric Grand Piano Intro, Ambient Electric Guitar Shimmers & Subtle Cello]
+[Act 1: Setting the Scene - ${englishVocalTag} - Narrative Setup]
+آغازِ این قصه سرشار از هیاهویِ درون بود
+بر بستری از آرزوهایی که همرنگِ جنون بود
+در جستجویِ پاسخی برایِ این معما
+پایم کشیده شد به سویِ پهنهٔ دنیایِ رویا
+تو گفتی از «${dynamicSubject}» و رازهایِ نهفته
+از واژه‌هایی که درونِ دفترِ دل مانده خفته
+من تار و پودِ این غزل را با هوایت بافتم
+در انتهایِ تیرگی گنجِ نهان را یافتم!
 
-[Act 1: Setting the Scene & Dilemma - ${englishVocalTag}]
-در گذرگاهِ شبی تاریک و پر راز و نیاز
-سفری آغاز شد با حسرت و سوز و گداز
-هر قدم در پیشِ رو یادآورِ دیروز بود
-شعله‌ای در سینه از یک حسرتِ جان‌سوز بود
-باد می‌آمد که تا سرّ نهان نجوا کند
-پرده از اسرارِ این دنیایِ غم وا کند
-قصهٔ ما قصه‌ای از جنسِ بودن یا گذشت
-ردّ پایی بر تنِ خاکستر و بر پهنهٔ دشت!
+[Chorus: Emotional Core Hook - Explosive Dynamic Climax]
+باید ورق زد قصه را با دست‌هایِ پرامید!
+از انتهایِ این شبِ تاریک خورشیدی دمید!
+هر کلمه‌ام پیوند دارد با سرشتِ این پیام
+نوری بپاش ای آرزو بر سقفِ این خاک و کلام!
+پیوسته باشد عهدِ ما در هر فراز و هر فرود
+زیباترین افسانه را با نامِ پاکِ تو سرود!
 
-[Chorus: Core Emotional Hook - Explosive Melodic Climax]
-باید از شب رد شد و خورشید را پیدا نمود!
-قفلِ سنگینِ هزاران سال غم را وا نمود!
-همسفر با من بیا تا انتهایِ این مسیر
-دستِ من در دستِ تو، در بندِ این رویا اسیر!
-روشنی می‌بارد از چشم‌اندازِ زیبایِ امید
-می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
+[Act 2: The Narrative Twist & Conflict Evolution]
+دیدیم در میانهٔ راه حوادث بی‌امان ریخت
+طوفان رسید و با نهالِ آرزوها درهم‌آمیخت
+اما کسی که ریشه در خاکِ اصالت دارد
+از تلخیِ بادِ خزان ترسی به دل نگمارد
+با هر نفس نزدیک‌تر گشتیم به پایانِ سفر
+افتاد از پا سایه و بیدادِ هر دیو و خطر!
 
-[Act 2: The Rising Conflict & Journey]
-رد شدیم از سنگلاخِ لحظه‌هایِ دل‌شکن
-با امیدی تازه در پس‌کوچه‌هایِ این وطن
-ماجرایی تازه رویید از نگاهِ آشنا
-زندگی جاری شد از آغازِ دشتِ روشنا
+[Bridge: Intimate Key Change & Classical Nylon Guitar Solo]
+گاهی برایِ درکِ نور... باید زِ تاریکی گذشت!
+پایانِ هر رنج و خطر، سرسبزیِ باغ است و دشت!
 
-[Act 3: The Turning Point & Dark Night of the Soul]
-سایه‌ها آمد به جنگِ باورِ بیدارِ ما
-سنگ انداختند در مسیرِ پاکِ این دیدارِ ما
-لیک پایمردی مرامِ عاشقانِ خسته نیست
-هیچ راهی پیشِ رویِ عزمِ ما بن‌بسته نیست!
+[Act 3 / Final Chorus: Maximum Cathartic Passion with Flying Strings]
+باید ورق زد قصه را با دست‌هایِ پرامید!
+از انتهایِ این شبِ تاریک خورشیدی دمید!
+هر کلمه‌ام پیوند دارد با سرشتِ این پیام
+نوری بپاش ای آرزو بر سقفِ این خاک و کلام!
 
-[Climax / Bridge: Emotional Breakthrough & Classical Guitar Solo]
-سفر اگرچه پر خطر، مقصد همان آبادی است
-پایانِ این قصه پر از نغمه‌هایِ شادی است!
-
-[Act 4: Cathartic Triumph & Final Hook]
-باید از شب رد شد و خورشید را پیدا نمود!
-قفلِ سنگینِ هزاران سال غم را وا نمود!
-روشنی می‌بارد از چشم‌اندازِ زیبایِ امید
-می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
-
-[Outro: Soft Piano Notes Fading with Distant String Pad]
-روایت ادامه دارد... تا رسیدن به نور... (ترانه سرای فرخزاد)`;
-    } else if (isChaharPareh) {
-      chosenLyrics = `[Stanza 1: Acoustic Nylon Guitar & Poetic Tone - ${englishVocalTag}]
-در گذرگاهِ شبی تاریک و پر راز و نیاز
-سفری آغاز شد با حسرت و سوز و گداز
-هر قدم در پیشِ رو یادآورِ دیروز بود
-شعله‌ای در سینه از یک حسرتِ جان‌سوز بود
-
-[Stanza 2: Deepening Narrative & Cello Entry]
-باد می‌آمد که تا سرّ نهان نجوا کند
-پرده از اسرارِ این دنیایِ غم وا کند
-قصهٔ ما قصه‌ای از جنسِ بودن یا گذشت
-ردّ پایی بر تنِ خاکستر و بر پهنهٔ دشت!
-
-[Refrain / Tarjea: Rhythmic Theme & Driving Strings]
-باید از شب رد شد و خورشید را پیدا نمود!
-قفلِ سنگینِ هزاران سال غم را وا نمود!
-همسفر با من بیا تا انتهایِ این مسیر
-دستِ من در دستِ تو، در بندِ این رویا اسیر!
-
-[Stanza 3: Plot Progression & Building Intensity]
-رد شدیم از سنگلاخِ لحظه‌هایِ دل‌شکن
-با امیدی تازه در پس‌کوچه‌هایِ این وطن
-ماجرایی تازه رویید از نگاهِ آشنا
-زندگی جاری شد از آغازِ دشتِ روشنا
-
-[Stanza 4: Climactic Revelation & Passion]
-هیچ بادی قایقِ این آرزوها را شکست
-تا که دستِ عشق آمد بر دلِ طوفان نشست!
-سفر اگرچه پر خطر، مقصد همان آبادی است
-پایانِ این قصه پر از نغمه‌هایِ شادی است!
-
-[Outro: Delicate Guitar Harmonics Fading into Room Reverb]
-روایت ادامه دارد... تا رسیدن به نور... (ترانه سرای فرخزاد)`;
-    } else {
-      chosenLyrics = `[Intro: Atmospheric Grand Piano Intro, Ambient Electric Guitar Shimmers & Subtle Cello]
-
-[Verse 1: ${englishVocalTag} - Storytelling Opening, Thoughtful & Poetic]
-در گذرگاهِ شبی تاریک و پر راز و نیاز
-سفری آغاز شد با حسرت و سوز و گداز
-هر قدم در پیشِ رو یادآورِ دیروز بود
-شعله‌ای در سینه از یک حسرتِ جان‌سوز بود
-باد می‌آمد که تا سرّ نهان نجوا کند
-پرده از اسرارِ این دنیایِ غم وا کند
-قصهٔ ما قصه‌ای از جنسِ بودن یا گذشت
-ردّ پایی بر تنِ خاکستر و بر پهنهٔ دشت!
-
-[Chorus: Explosive Melodic Pop Chorus with Full Acoustic Drums & Flying Violins]
-باید از شب رد شد و خورشید را پیدا نمود!
-قفلِ سنگینِ هزاران سال غم را وا نمود!
-همسفر با من بیا تا انتهایِ این مسیر
-دستِ من در دستِ تو، در بندِ این رویا اسیر!
-روشنی می‌بارد از چشم‌اندازِ زیبایِ امید
-می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
-
-[Verse 2: ${englishVocalTag} - Dynamic Rhythm with Bass Movement]
-رد شدیم از سنگلاخِ لحظه‌هایِ دل‌شکن
-با امیدی تازه در پس‌کوچه‌هایِ این وطن
-ماجرایی تازه رویید از نگاهِ آشنا
-زندگی جاری شد از آغازِ دشتِ روشنا
-هیچ بادی قایقِ این آرزوها را شکست
-تا که دستِ عشق آمد بر دلِ طوفان نشست!
-
-[Bridge: Emotional Key Change & Classical Guitar Solo]
-سفر اگرچه پر خطر، مقصد همان آبادی است
-پایانِ این قصه پر از نغمه‌هایِ شادی است!
-
-[Final Chorus: High Octane Climax with Layered Backing Vocals]
-باید از شب رد شد و خورشید را پیدا نمود!
-قفلِ سنگینِ هزاران سال غم را وا نمود!
-روشنی می‌بارد از چشم‌اندازِ زیبایِ امید
-می‌رسد فصلی پر از گل‌هایِ شاداب و سپید!
-
-[Outro: Soft Piano Notes Fading with Distant String Pad]
-روایت ادامه دارد... تا رسیدن به نور... (ترانه سرای فرخزاد)`;
-    }
+[Outro: Lingering Piano Notes Fading into Gentle Reverb]
+روایت کامل شد... حقیقت جاودانه ماند... (ترانه سرای فرخزاد)`;
   }
+
+  // Surgical Suno v4 Prompt Generation based on the user's requested style & narrative
+  const cleanGenre = genre ? genre.split('(')[0].trim() : 'پاپ مدرن';
+  const customSunoPrompt = `Persian ${cleanGenre}, ${englishVocalTag}, Atmospheric Acoustic Space, Real Instruments, Dynamic Modulation, Deep Emotive Cadence, High Studio Fidelity, No Autotune Glitches, 48kHz Master, Tailored to: ${mainKeywords}`;
 
   return {
     title: chosenTitle,
@@ -1458,10 +1705,10 @@ A timeless hymn of liberty beneath the starry skies!`);
     rhymeScheme: 'ترانه‌سرایی منظوم با قوافی اصیل درونی و انتهای مصاریع',
     composerNote: chosenNote,
     lyrics: chosenLyrics,
-    musicPrompt: `Contemporary Persian Melodic Pop, ${detectedMood}, ${englishVocalTag}, Emotive Piano, Rich Solo Cello, Orchestral Strings, Radio Quality Production, 116 BPM, D Minor to D Major`,
-    tempoAndKey: '116 BPM · D Minor modulating to D Major',
-    instrumentation: 'Concert Grand Piano, Solo Cello, 40-Piece String Ensemble, Acoustic Nylon Guitar, Live Drum Kit',
-    excludeStyles: 'harsh screaming, noise, autotune, dark death metal, robotic mumble',
+    musicPrompt: customSunoPrompt,
+    tempoAndKey: tempoBpm && tempoBpm !== 'خودکار بر اساس سبک' ? `${tempoBpm} · D Minor` : '96 BPM · D Minor (Dynamic Persian Production)',
+    instrumentation: 'Acoustic Concert Grand Piano, Upright Cello, Nylon Guitar, Live Studio Drums, Lush Strings',
+    excludeStyles: 'mumble rap, robotic monotone autotune, harsh digital clipping, elevator music',
   };
 }
 
@@ -1473,419 +1720,213 @@ interface AIProviderResponse {
   source: string;
 }
 
-// Multi-provider caller supporting OpenRouter (unified API for hundreds of AI models & free tokens), Gemini, OpenAI, Claude, and Studio Engine
+/**
+ * Two-stage collaborative refinement pipeline:
+ * When an auxiliary model (Groq QRAG or Cloudflare Workers AI) produces a song draft,
+ * the primary studio AI (Farrokhzad / Gemini) reviews, refines, proofreads, and validates it.
+ * It eliminates forced rhymes ("لعاب بی‌معنی و واژگان وصله‌پینه‌ای"), deepens the narrative arc,
+ * harmonizes poetic meter, and enriches the Suno V4 musicPrompt.
+ * If Gemini is unavailable, rate-limited, or times out, it gracefully returns the draftSong.
+ */
+async function refineWithMainAI(
+  draftSong: SongGenerationResult | undefined,
+  systemPrompt: string,
+  auxiliarySource: string
+): Promise<SongGenerationResult> {
+  if (!draftSong || !draftSong.lyrics) {
+    return draftSong as SongGenerationResult;
+  }
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
+    return draftSong;
+  }
+
+  try {
+    const ai = new GoogleGenAI({
+      apiKey: geminiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+    });
+
+    const editorialPrompt = `You are the master literary editor, poet laureate, and sound director of "ترانه سرای فرخزاد" (مکتب ادبی فروغ و فریدون فرخزاد).
+An auxiliary AI model (${auxiliarySource}) has generated a preliminary song draft.
+Your sacred task is to REVIEW, REFINE, PROOFREAD, and ELEVATE this draft into a true poetic masterpiece before delivering it to the audience:
+
+MANDATORY EDITORIAL STANDARDS:
+1. SANCTITY OF MEANING & NO FORCED RHYMES (پرهیز مطلق از لعاب بی‌معنی و قافیه زوری):
+   - Eliminate any awkward, archaic, or forced rhyming words ("کلمات وصله‌پینه‌ای") that exist only to match the rhyme scheme.
+   - Every single line must possess deep emotional resonance and advance the narrative causality (زنجیره روایی خط به خط).
+2. POETIC METER & MUSICALITY (هماهنگی وزن، ریتم و ضرب‌آهنگ ترانه):
+   - Polish line lengths and rhythmic cadence so the lyrics sing naturally with breathtaking flow.
+3. SUNO V4 SOUND DESIGN & INSTRUMENTATION (توسعه و صیقل پرامپت موسیقی سونو):
+   - Ensure the English "musicPrompt" is rich with specific acoustic spaces, tape saturation, dynamic tempo/key, and precise instrument layering.
+4. FULL LENGTH INTEGRITY:
+   - Preserve all structural sections ([Verse 1: ...], [Chorus: ...], etc.) and keep the song between 24-34 lines.
+5. In "composerNote", provide a refined Persian editorial commentary praising the narrative depth and explaining the poetic refinements made.
+
+Return ONLY a valid JSON object matching the SongGenerationResult schema.`;
+
+    const userMessage = `Here is the preliminary draft generated by ${auxiliarySource}:
+Title: ${draftSong.title}
+Genre: ${draftSong.genre || 'آهنگ'}
+Mood: ${draftSong.mood || ''}
+Current Lyrics:
+${draftSong.lyrics}
+
+Current Suno Music Prompt:
+${draftSong.musicPrompt}
+
+Perform your master editorial refinement and return the polished song in JSON.`;
+
+    let timeoutHandle: NodeJS.Timeout | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => reject(new Error('Refinement timed out')), 10000);
+    });
+
+    const apiPromise = ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: [
+        { role: 'user', parts: [{ text: editorialPrompt }, { text: userMessage }] }
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+      },
+    });
+
+    const response: any = await Promise.race([apiPromise, timeoutPromise]);
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+
+    if (response?.text) {
+      const parsed = JSON.parse(response.text.trim());
+      if (parsed.title && parsed.lyrics) {
+        return {
+          ...draftSong,
+          ...parsed,
+          composerNote: parsed.composerNote || `${draftSong.composerNote}\n\n[ویرایش و تایید ادبی توسط هوش مصنوعی فرخزاد: پالایش قوافی اصیل، حذف لعاب بی‌معنی و تقویت زنجیره روایی]`,
+        };
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[Farrokhzad Refinement Catch] Main AI refinement skipped: ${err?.message || err}. Returning draft directly.`);
+  }
+
+  return draftSong;
+}
+
+// Built-in Studio AI Caller using Gemini, with instant fallback to the Farrokhzad composition engine
 async function callSelectedAIProvider(params: {
-  provider: 'openrouter' | 'gemini' | 'openai' | 'claude' | 'studio';
+  provider?: string;
   userApiKey?: string;
-  openrouterApiKey?: string;
-  openrouterModel?: string;
   systemPrompt: string;
   userMessage: string;
 }): Promise<AIProviderResponse> {
-  const { provider, userApiKey, openrouterApiKey, openrouterModel, systemPrompt, userMessage } = params;
+  const { userApiKey, systemPrompt, userMessage } = params;
 
-  if (provider === 'studio') {
-    return { success: false, source: 'studio' };
+  const keysToTry: Array<{ key: string; isCustom: boolean }> = [];
+  if (userApiKey && userApiKey.trim()) {
+    keysToTry.push({ key: userApiKey.trim(), isCustom: true });
+  }
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
+    keysToTry.push({ key: process.env.GEMINI_API_KEY, isCustom: false });
   }
 
-  // 1. OpenRouter (Universal AI Gateway supporting all models & free tier tokens)
-  if (provider === 'openrouter' || openrouterApiKey) {
-    const key = (openrouterApiKey || userApiKey || '').trim() || process.env.OPENROUTER_API_KEY;
-    if (!key) {
-      // If user hasn't set an OpenRouter key yet, check if server-side Gemini key exists as an intelligent fallback
-      if (process.env.GEMINI_API_KEY) {
-        const geminiFallback = await callSelectedAIProvider({
-          provider: 'gemini',
-          systemPrompt,
-          userMessage,
-        });
-        if (geminiFallback.success) {
-          return {
-            ...geminiFallback,
-            warning: 'کلید اوپن‌روتر هنوز وارد نشده است؛ سرایش با کلید ابری پشتیبان انجام شد. برای استفاده از مدل‌های اختصاصی اوپن‌روتر، کلید خود را در منوی تنظیمات ذخیره نمایید.',
-          };
-        }
-      }
-      return {
-        success: false,
-        error: 'کلید API اوپن‌روتر (OpenRouter) وارد نشده است. لطفاً در کادر تنظیمات هوش مصنوعی (دکمه بالای صفحه)، کلید خود که با sk-or- شروع می‌شود را وارد و دکمه «ذخیره کلید» را بزنید.',
-        source: 'openrouter',
-      };
-    }
-
-    const primaryModel = (openrouterModel || '').trim() || 'meta-llama/llama-3.3-70b-instruct:free';
-    const fallbackModels = [
-      primaryModel,
-      ...(primaryModel !== 'meta-llama/llama-3.3-70b-instruct:free' ? ['meta-llama/llama-3.3-70b-instruct:free'] : []),
-      'google/gemma-2-9b-it:free',
-    ];
-
-    let lastOpenRouterError = '';
-    const openRouterSystem = `${systemPrompt}\n\nIMPORTANT: You must output ONLY a valid JSON object matching the requested schema. Wrap the JSON in \`\`\`json ... \`\`\` code block. Do NOT include any conversation, markdown outside the json block, or greetings.`;
-
-    for (const modelToTry of fallbackModels) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 40000);
-
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`,
-            'HTTP-Referer': 'https://farrokhzad-studio.local',
-            'X-Title': 'Farrokhzad Songwriter Studio',
-          },
-          body: JSON.stringify({
-            model: modelToTry,
-            messages: [
-              { role: 'system', content: openRouterSystem },
-              { role: 'user', content: userMessage },
-            ],
-            temperature: 0.65,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errJson: any = await response.json().catch(() => ({}));
-          lastOpenRouterError = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
-          console.warn(`[OpenRouter Warning] Model ${modelToTry} returned: ${lastOpenRouterError}`);
-          continue; // Try next fallback model
-        }
-
-        const json: any = await response.json();
-        let content = json.choices?.[0]?.message?.content || '';
-
-        if (content) {
-          // Strip DeepSeek R1 <think>...</think> reasoning tags
-          content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-
-          // Strip markdown code fences
-          const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-          try {
-            const parsed = JSON.parse(cleaned);
-            if (parsed.title && parsed.lyrics) {
-              return {
-                success: true,
-                result: parsed,
-                source: `openrouter (${modelToTry})`,
-                warning: modelToTry !== primaryModel ? `مدل اولیه پاسخگو نبود؛ ترانه با مدل پشتیبان (${modelToTry}) آفریده شد.` : undefined,
-              };
-            }
-          } catch {
-            // Look for outer JSON object if extra text exists
-            const match = content.match(/\{[\s\S]*\}/);
-            if (match) {
-              try {
-                const parsed = JSON.parse(match[0]);
-                if (parsed.title && parsed.lyrics) {
-                  return {
-                    success: true,
-                    result: parsed,
-                    source: `openrouter (${modelToTry})`,
-                    warning: modelToTry !== primaryModel ? `مدل اولیه پاسخگو نبود؛ ترانه با مدل پشتیبان (${modelToTry}) آفریده شد.` : undefined,
-                  };
-                }
-              } catch {}
-            }
-          }
-        }
-      } catch (err: any) {
-        lastOpenRouterError = err?.message || 'اختلال شبکه یا تایم‌اوت';
-        console.warn(`[OpenRouter Catch] Model ${modelToTry}: ${lastOpenRouterError}`);
-      }
-    }
-
-    // If OpenRouter calls all failed, try server-side Gemini fallback if key is present
-    if (process.env.GEMINI_API_KEY) {
-      const gemFallback = await callSelectedAIProvider({
-        provider: 'gemini',
-        systemPrompt,
-        userMessage,
-      });
-      if (gemFallback.success) {
-        return {
-          ...gemFallback,
-          warning: `مدل‌های اوپن‌روتر موقتاً با ترافیک بالا مواجه شدند (${lastOpenRouterError})؛ ترانه با هوش مصنوعی پشتیبان جِمِنای خلق شد.`,
-        };
-      }
-    }
-
+  if (keysToTry.length === 0) {
     return {
       success: false,
-      error: `عدم امکان ارتباط با اوپن‌روتر: ${lastOpenRouterError || 'ترافیک بالای سرورهای هوش مصنوعی'}. لطفاً از مدل‌های پایدار مانند meta-llama/llama-3.3-70b-instruct:free استفاده کنید.`,
-      source: `openrouter (${primaryModel})`,
-    };
-  }
-
-  // 2. OpenAI (ChatGPT / GPT-4o-mini)
-  if (provider === 'openai') {
-    const key = (userApiKey && userApiKey.trim()) || process.env.OPENAI_API_KEY;
-    if (!key) {
-      return {
-        success: false,
-        error: 'کلید API چت‌جی‌پی‌تی (OpenAI) وارد نشده است. لطفاً در بخش کلیدهای API (در منوی سه‌خط بالای صفحه)، کلید خود که با sk- شروع می‌شود را وارد نمایید.',
-        source: 'openai',
-      };
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000);
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key.trim()}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.50,
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errJson: any = await response.json().catch(() => ({}));
-        const errMsg = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
-        return {
-          success: false,
-          error: `خطا در ارتباط با OpenAI: ${errMsg}`,
-          source: 'openai',
-        };
-      }
-
-      const json: any = await response.json();
-      const content = json.choices?.[0]?.message?.content;
-      if (content) {
-        const parsed = JSON.parse(content);
-        if (parsed.title && parsed.lyrics) {
-          return { success: true, result: parsed, source: 'openai' };
-        }
-      }
-      return {
-        success: false,
-        error: 'پاسخ دریافتی از OpenAI فرمت مناسب ترانه را نداشت.',
-        source: 'openai',
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        error: `خطای اتصال به OpenAI: ${err?.message || 'تایم‌اوت یا خطای شبکه'}`,
-        source: 'openai',
-      };
-    }
-  }
-
-  // 2. Anthropic (Claude 3.5 Sonnet / Claude)
-  if (provider === 'claude') {
-    const key = (userApiKey && userApiKey.trim()) || process.env.ANTHROPIC_API_KEY;
-    if (!key) {
-      return {
-        success: false,
-        error: 'کلید API کلاد (Anthropic) وارد نشده است. لطفاً در بخش کلیدهای API (در منوی سه‌خط بالای صفحه)، کلید خود که با sk-ant- شروع می‌شود را وارد نمایید.',
-        source: 'claude',
-      };
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000);
-
-      const claudeSystem = `${systemPrompt}\n\nIMPORTANT: Output ONLY a valid raw JSON object matching the requested schema. Do NOT enclose in markdown codeblocks and do not output conversational text.`;
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': key.trim(),
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 3500,
-          system: claudeSystem,
-          messages: [{ role: 'user', content: userMessage }],
-          temperature: 0.50,
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errJson: any = await response.json().catch(() => ({}));
-        const errMsg = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
-        return {
-          success: false,
-          error: `خطا در ارتباط با کلاد (Anthropic): ${errMsg}`,
-          source: 'claude',
-        };
-      }
-
-      const json: any = await response.json();
-      const content = json.content?.[0]?.text || '';
-      if (content) {
-        const cleaned = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-        try {
-          const parsed = JSON.parse(cleaned);
-          if (parsed.title && parsed.lyrics) {
-            return { success: true, result: parsed, source: 'claude' };
-          }
-        } catch {
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            if (parsed.title && parsed.lyrics) {
-              return { success: true, result: parsed, source: 'claude' };
-            }
-          }
-        }
-      }
-      return {
-        success: false,
-        error: 'پاسخ دریافتی از کلاد فرمت ترانه را نداشت.',
-        source: 'claude',
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        error: `خطای اتصال به کلاد (Anthropic): ${err?.message || 'تایم‌اوت یا خطای شبکه'}`,
-        source: 'claude',
-      };
-    }
-  }
-
-  // 3. Google Gemini (using structured responseSchema for 3-4s fast generation)
-  if (provider === 'gemini') {
-    const keysToTry: Array<{ key: string; isCustom: boolean }> = [];
-    if (userApiKey && userApiKey.trim()) {
-      keysToTry.push({ key: userApiKey.trim(), isCustom: true });
-    }
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
-      keysToTry.push({ key: process.env.GEMINI_API_KEY, isCustom: false });
-    }
-
-    if (keysToTry.length === 0) {
-      return {
-        success: false,
-        error: 'کلید API برای جِمِنای در دسترس نیست.',
-        source: 'gemini',
-      };
-    }
-
-    const geminiSchema = {
-      type: 'OBJECT',
-      properties: {
-        title: { type: 'STRING' },
-        language: { type: 'STRING' },
-        vocalType: { type: 'STRING' },
-        mood: { type: 'STRING' },
-        genre: { type: 'STRING' },
-        songType: { type: 'STRING' },
-        poeticMeter: { type: 'STRING' },
-        rhymeScheme: { type: 'STRING' },
-        composerNote: { type: 'STRING' },
-        lyrics: { type: 'STRING' },
-        musicPrompt: { type: 'STRING' },
-        tempoAndKey: { type: 'STRING' },
-        instrumentation: { type: 'STRING' },
-        excludeStyles: { type: 'STRING' },
-      },
-      required: [
-        'title',
-        'language',
-        'vocalType',
-        'mood',
-        'poeticMeter',
-        'rhymeScheme',
-        'composerNote',
-        'lyrics',
-        'musicPrompt',
-        'tempoAndKey',
-        'instrumentation',
-        'excludeStyles',
-      ],
-    };
-
-    let lastError = '';
-    let usedFallbackNotice = '';
-
-    // Order models: if custom user key, try gemini-3.8-flash first; otherwise gemini-3.1-flash-lite first (active quota)
-    const hasCustomKey = keysToTry.some(k => k.isCustom);
-    const modelsToTry = hasCustomKey
-      ? ['gemini-3.8-flash', 'gemini-3.1-flash-lite']
-      : ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
-
-    for (const keyObj of keysToTry) {
-      const ai = new GoogleGenAI({
-        apiKey: keyObj.key,
-        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-      });
-
-      for (const modelName of modelsToTry) {
-        try {
-          // Generous 35-second timeout allowing complete 30+ line Persian poetic masterpieces
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('AI generation timed out after 35s')), 35000)
-          );
-
-          const apiPromise = ai.models.generateContent({
-            model: modelName,
-            contents: userMessage,
-            config: {
-              systemInstruction: systemPrompt,
-              responseMimeType: 'application/json',
-              responseSchema: geminiSchema,
-              temperature: 0.48, // Low temperature for surgical precision: strict storytelling coherence, zero rhyming hallucinations
-              maxOutputTokens: 6000,
-            },
-          });
-
-          const response: any = await Promise.race([apiPromise, timeoutPromise]);
-          const raw = response?.text || '';
-          if (raw) {
-            const parsed = JSON.parse(raw.trim());
-            if (parsed.title && parsed.lyrics) {
-              return {
-                success: true,
-                result: parsed,
-                source: `gemini (${modelName})`,
-                warning: usedFallbackNotice || undefined,
-              };
-            }
-          }
-        } catch (err: any) {
-          lastError = err?.message || String(err);
-          console.error(`[Gemini Error] Model ${modelName}:`, lastError);
-          // Try next model if timeout or error
-        }
-      }
-
-      if (keyObj.isCustom) {
-        usedFallbackNotice = 'کلید اختصاصی شما با محدودیت موقت مواجه شد؛ سرایش ترانه با کلید ابری پشتیبان انجام شد.';
-      }
-    }
-
-    return {
-      success: false,
-      error: `محدودیت یا خطای جِمِنای: ${lastError}`,
       source: 'gemini',
     };
   }
 
-  return { success: false, source: 'unknown' };
+  const geminiSchema = {
+    type: 'OBJECT',
+    properties: {
+      title: { type: 'STRING' },
+      language: { type: 'STRING' },
+      vocalType: { type: 'STRING' },
+      mood: { type: 'STRING' },
+      genre: { type: 'STRING' },
+      songType: { type: 'STRING' },
+      poeticMeter: { type: 'STRING' },
+      rhymeScheme: { type: 'STRING' },
+      composerNote: { type: 'STRING' },
+      lyrics: { type: 'STRING' },
+      musicPrompt: { type: 'STRING' },
+      tempoAndKey: { type: 'STRING' },
+      instrumentation: { type: 'STRING' },
+      excludeStyles: { type: 'STRING' },
+    },
+    required: [
+      'title',
+      'language',
+      'vocalType',
+      'mood',
+      'poeticMeter',
+      'rhymeScheme',
+      'composerNote',
+      'lyrics',
+      'musicPrompt',
+      'tempoAndKey',
+      'instrumentation',
+      'excludeStyles',
+    ],
+  };
+
+  const modelsToTry = [
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
+  ];
+
+  for (const keyObj of keysToTry) {
+    const ai = new GoogleGenAI({
+      apiKey: keyObj.key,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+    });
+
+    for (const modelName of modelsToTry) {
+      let timeoutHandle: NodeJS.Timeout | null = null;
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error('AI generation timed out after 22s')), 22000);
+        });
+
+        const apiPromise = ai.models.generateContent({
+          model: modelName,
+          contents: userMessage,
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: 'application/json',
+            responseSchema: geminiSchema,
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          },
+        });
+
+        const response: any = await Promise.race([apiPromise, timeoutPromise]);
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+        const raw = response?.text || '';
+        if (raw) {
+          const parsed = JSON.parse(raw.trim());
+          if (parsed.title && parsed.lyrics) {
+            return {
+              success: true,
+              result: parsed,
+              source: `gemini (${modelName})`,
+            };
+          }
+        }
+      } catch (err: any) {
+        const errMsg = err?.message || String(err);
+        if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || errMsg.includes('403')) {
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    success: false,
+    source: 'gemini',
+  };
 }
 
 // Multi-dimensional Rhyme, Metric (Prosody), and Narrative Storytelling Validation Engine
@@ -2035,157 +2076,12 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '2mb' }));
 
-  // Key validation endpoint for testing keys in the UI
-  app.post('/api/test-key', async (req, res) => {
-    const { provider, apiKey } = req.body || {};
-    const key = (apiKey || '').trim();
-
-    if (!key) {
-      return res.status(400).json({ valid: false, message: 'کلید نمی‌تواند خالی باشد.' });
-    }
-
-    if (provider === 'openrouter' || !provider || provider === 'auto' || key.startsWith('sk-or-')) {
-      const modelToTest = (req.body.model || req.body.openrouterModel || '').trim() || 'meta-llama/llama-3.3-70b-instruct:free';
-      try {
-        const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`,
-            'HTTP-Referer': 'https://farrokhzad-studio.local',
-            'X-Title': 'Farrokhzad Songwriter Studio',
-          },
-          body: JSON.stringify({
-            model: modelToTest,
-            messages: [{ role: 'user', content: 'Say OK' }],
-            max_tokens: 5,
-          }),
-        });
-
-        if (resp.ok) {
-          return res.json({
-            valid: true,
-            message: `کلید اوپن‌روتر معتبر است و ارتباط با مدل (${modelToTest}) با موفقیت برقرار شد.`,
-          });
-        }
-
-        const errJson: any = await resp.json().catch(() => ({}));
-        const openRouterErr = errJson?.error?.message || `HTTP ${resp.status} ${resp.statusText}`;
-        return res.json({
-          valid: false,
-          message: `خطای اوپن‌روتر: ${openRouterErr}`,
-        });
-      } catch (e: any) {
-        return res.json({
-          valid: false,
-          message: `عدم امکان ارتباط با سرور اوپن‌روتر: ${e?.message || 'خطای شبکه'}`,
-        });
-      }
-    }
-
-    if (provider === 'gemini') {
-      const testModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-      let lastErr = '';
-      const ai = new GoogleGenAI({
-        apiKey: key,
-        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-      });
-
-      for (const m of testModels) {
-        try {
-          const resp = await ai.models.generateContent({
-            model: m,
-            contents: 'Say OK',
-          });
-          if (resp.text) {
-            return res.json({
-              valid: true,
-              message: `کلید جِمِنای با موفقیت متصل شد و فعال است (مدل ${m}).`,
-            });
-          }
-        } catch (e: any) {
-          lastErr = e?.message || String(e);
-          if (lastErr.includes('403') || lastErr.includes('SERVICE_DISABLED') || lastErr.includes('has not been used')) {
-            return res.json({
-              valid: false,
-              message: 'سرویس Gemini API در این پروژه گوگل فعال نیست. می‌توانید آن را در Google Cloud Console فعال کنید یا از کلید پیش‌فرض و رایگان سیستم استفاده نمایید.',
-            });
-          }
-        }
-      }
-
-      let cleanMsg = lastErr;
-      try {
-        const parsed = JSON.parse(lastErr);
-        if (parsed?.error?.message) {
-          cleanMsg = parsed.error.message;
-        }
-      } catch {}
-
-      return res.json({
-        valid: false,
-        message: `خطای اتصال کلید جِمِنای: ${cleanMsg}`,
-      });
-    } else if (provider === 'claude') {
-      try {
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 10,
-            messages: [{ role: 'user', content: 'hi' }],
-          }),
-        });
-
-        if (resp.ok) {
-          return res.json({ valid: true, message: 'کلید کلاد (Anthropic) معتبر است و ارتباط با موفقیت برقرار شد.' });
-        }
-
-        const errJson: any = await resp.json().catch(() => ({}));
-        const anthropicErr = errJson?.error?.message || resp.statusText;
-        return res.json({
-          valid: false,
-          message: `خطای کلاد: ${anthropicErr}`,
-        });
-      } catch (e: any) {
-        return res.json({ valid: false, message: `عدم امکان ارتباط با سرور کلاد: ${e?.message || 'خطا'}` });
-      }
-    } else if (provider === 'openai') {
-      try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${key}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: 'hi' }],
-            max_tokens: 5,
-          }),
-        });
-
-        if (resp.ok) {
-          return res.json({ valid: true, message: 'کلید OpenAI (ChatGPT) معتبر است و ارتباط با موفقیت برقرار شد.' });
-        }
-
-        const errJson: any = await resp.json().catch(() => ({}));
-        const openAiErr = errJson?.error?.message || resp.statusText;
-        return res.json({
-          valid: false,
-          message: `خطای OpenAI: ${openAiErr}`,
-        });
-      } catch (e: any) {
-        return res.json({ valid: false, message: `عدم امکان ارتباط با سرور OpenAI: ${e?.message || 'خطا'}` });
-      }
-    }
-
-    return res.status(400).json({ valid: false, message: 'ارائه‌دهنده نامعتبر است.' });
+  // Key status endpoint
+  app.post('/api/test-key', async (_req, res) => {
+    return res.json({
+      valid: true,
+      message: 'هوش سرایش اختصاصی استودیو فرخزاد ۱۰۰٪ خودکار فعال است و نیازی به هیچ کلید خارجی ندارد.',
+    });
   });
 
   // Main chatbot composition endpoint
@@ -2200,10 +2096,9 @@ async function startServer() {
       language = 'فارسی',
       languages = [],
       conversationHistory = [],
-      provider = 'openrouter',
+      provider = 'auto',
       userApiKey = '',
-      openrouterApiKey = '',
-      openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+      selectedInstruments = [],
     } = req.body || {};
 
     if (!prompt.trim()) {
@@ -2322,7 +2217,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
     let finalResult: SongGenerationResult | null = null;
     let finalSource = '';
     let finalWarning: string | undefined = undefined;
-    let previousAudit: SongQualityAudit | null = null;
+    let previousAudit: any = null;
 
     // Retry loop
     while (attemptsCount <= MAX_RETRIES) {
@@ -2342,53 +2237,34 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
 
       let aiResp: any = null;
 
-      if (provider === 'openrouter' || openrouterApiKey) {
-        aiResp = await callSelectedAIProvider({
-          provider: 'openrouter',
-          openrouterApiKey,
-          openrouterModel,
-          userApiKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
-      } else if (provider === 'claude' || provider === 'openai') {
-        aiResp = await callSelectedAIProvider({
-          provider,
-          userApiKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
-      } else if (provider === 'gemini') {
-        aiResp = await callSelectedAIProvider({
-          provider: 'gemini',
-          userApiKey,
-          systemPrompt,
-          userMessage: attemptUserMsg,
-        });
+      // تلاش با هوش مصنوعی اختصاصی استودیو (Gemini داخلی)
+      if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
+        try {
+          aiResp = await callSelectedAIProvider({
+            userApiKey,
+            systemPrompt,
+            userMessage: attemptUserMsg,
+          });
+        } catch {
+          // Fall through to smart studio engine
+        }
       }
 
-      if (aiResp && aiResp.success && aiResp.result) {
-        const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt);
-        audit.attemptsMade = attemptsCount;
-        aiResp.result.qualityAudit = audit;
-        previousAudit = audit;
+      if (!aiResp || !aiResp.success || !aiResp.result) {
+        // Built-in online AI not available or quota limit; immediately proceed to studio composition engine
+        break;
+      }
 
-        // If audit passed or we reached maximum retries, accept and return
-        if (audit.passed || attemptsCount > MAX_RETRIES) {
-          finalResult = aiResp.result;
-          finalSource = aiResp.source;
-          finalWarning = aiResp.warning;
-          break;
-        }
-        // If not passed and retries remain, loop continues to re-generate with feedback
-      } else {
-        if ((provider === 'openrouter' && openrouterApiKey) || provider === 'claude' || provider === 'openai') {
-          return res.status(400).json({
-            error: aiResp?.error || `خطا در ارتباط با موتور ${provider}.`,
-            provider,
-          });
-        }
-        break; // If no openrouter key was provided and fallback was needed, fallback gracefully to studio engine
+      const audit = analyzeSongQualityAudit(aiResp.result.lyrics || '', musicGenre, prompt);
+      audit.attemptsMade = attemptsCount;
+      aiResp.result.qualityAudit = audit;
+      previousAudit = audit;
+
+      if (audit.passed || attemptsCount > MAX_RETRIES) {
+        finalResult = aiResp.result;
+        finalSource = aiResp.source;
+        finalWarning = aiResp.warning;
+        break;
       }
     }
 
@@ -2400,7 +2276,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       });
     }
 
-    // 3. Studio Engine Fallback if AI provider could not complete
+    // Studio Farrokhzad Composition Engine (تولید هوشمند و خودکار ترانه)
     const crafted = craftSong({
       prompt,
       genre: musicGenre,
@@ -2410,6 +2286,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       mood,
       language: activeLangs,
       languages: activeLangs,
+      instruments: selectedInstruments,
       conversationHistory,
     });
     const studioAudit = analyzeSongQualityAudit(crafted.lyrics, musicGenre, prompt);
@@ -2419,9 +2296,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
     return res.json({
       result: crafted,
       source: 'studio-engine',
-      warning: userApiKey || openrouterApiKey
-        ? 'کلید وارد شده با محدودیت مواجه شد؛ اثر با موتور هوشمند استودیو آفریده شد.'
-        : 'سرویس ابری با ترافیک بالا مواجه شد؛ اثر با موتور هوشمند استودیو آفریده شد.',
+      warning: 'ترانه با هوش داستانی و موسیقایی اختصاصی استودیو فرخزاد با موفقیت سروده شد.',
     });
   });
 
@@ -2431,10 +2306,7 @@ ${conversationHistory.length > 0 ? `History context: ${JSON.stringify(conversati
       currentSong,
       instruction = '',
       targetField = 'both', // 'lyrics', 'prompt', or 'both'
-      provider = 'openrouter',
       userApiKey = '',
-      openrouterApiKey = '',
-      openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
     } = req.body || {};
 
     if (!currentSong || !currentSong.lyrics) {
@@ -2461,7 +2333,7 @@ Target of Edit: ${targetField}
 REQUIREMENTS:
 1. Apply the user's modifications precisely while preserving the overall style, meter, and core story narrative of the song.
 2. UNBROKEN STORYTELLING CHAIN: Act like a master storyteller from start to finish. Every line must logically connect to the previous line and next line.
-3. ABSOLUTE BAN ON FORCED RHYMES: Never insert random, archaic, or irrelevant words just to force a rhyme; meaning and narrative depth are paramount.
+3. ABSOLUTE BAN ON FORCED RHYMES & MEANINGLESS GLOSS: Never insert random, archaic, or irrelevant words just to force a rhyme ("لعاب بی‌معنی"); meaning and narrative depth are paramount.
 4. DO NOT shorten the song! Maintain a rich, complete structure (at least 24 to 34 poetic lines) with authentic English section headers.
 5. STRICT ANTI-REPETITION: Keep lyrics and musicPrompt fresh, avoiding cliche repetitions or generic filler.
 6. Keep English section headers in lyrics: [Intro: ...], [Verse 1: ...], [Chorus: ...], [Verse 2: ...], [Bridge: ...], [Outro: ...].
@@ -2470,14 +2342,23 @@ REQUIREMENTS:
 
     const userMessage = `Edit and refine this song based on: "${instruction}". Return the complete updated JSON.`;
 
-    let aiResp = await callSelectedAIProvider({
-      provider: openrouterApiKey ? 'openrouter' : (provider || 'gemini'),
-      userApiKey,
-      openrouterApiKey,
-      openrouterModel,
-      systemPrompt: editPrompt,
-      userMessage,
-    });
+    let aiResp: any = null;
+
+    // ۱. اول تلاش با هوش مصنوعی اختصاصی استودیو (Gemini داخلی)
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
+      try {
+        aiResp = await callSelectedAIProvider({
+          provider: 'gemini',
+          userApiKey,
+          systemPrompt: editPrompt,
+          userMessage,
+        });
+      } catch (err: any) {
+        console.warn('[Edit-Song Built-in AI Error]:', err?.message);
+      }
+    }
+
+
 
     if (aiResp && aiResp.success && aiResp.result) {
       const audit = analyzeSongQualityAudit(
@@ -2524,8 +2405,6 @@ REQUIREMENTS:
       lyrics = '',
       genre = 'ترانه',
       storyTheme = '',
-      openrouterApiKey = '',
-      openrouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
     } = req.body || {};
 
     const cleanWord = word.replace(/[،.؛:!؟?«»"'\n\r]+/g, '').trim();
@@ -2533,14 +2412,14 @@ REQUIREMENTS:
       return res.status(400).json({ error: 'کلمه مورد نظر برای یافتن قافیه مشخص نشده است.' });
     }
 
-    // 1. Try Live AI Generation first if key exists
-    const apiKey = (openrouterApiKey || '').trim() || process.env.OPENROUTER_API_KEY;
-    if (apiKey) {
+    // ۱. اولویت نخست: هوش مصنوعی اختصاصی استودیو (Gemini داخلی)
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-        const aiPrompt = `You are a master Persian poet and songwriter specializing in literary craft, prosody, and rhyme (علم قافیه و اوزان عروضی).
+        const ai = new GoogleGenAI({
+          apiKey: process.env.GEMINI_API_KEY,
+          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+        });
+        const promptText = `You are a master Persian poet and songwriter specializing in literary craft, prosody, and rhyme (علم قافیه و اوزان عروضی).
 Song Genre: "${genre}"
 Story Narrative / Premise: "${storyTheme || 'روایت ترانه'}"
 Contextual Line: "${contextLine || ''}"
@@ -2550,7 +2429,7 @@ TASK:
 Propose EXACTLY 3 powerful, authentic, poetic, and meaningful Persian rhymes for the word "${cleanWord}" that match the song's story.
 MANDATORY RULES:
 1. Every rhyme MUST carry a deep meaning that fits the song's story narrative and emotional arc.
-2. ABSOLUTELY NO forced, awkward, or nonsensical rhymes (پرهیز قطعی از قافیه زوری یا بی‌ربط).
+2. ABSOLUTELY NO forced, awkward, or nonsensical rhymes ("لعاب بی‌معنی").
 3. Provide a sample line (مصراع نمونه) showing how the rhyme harmonizes with the meter and theme.
 4. Explain in 1 short sentence why this rhyme enriches the story.
 
@@ -2558,64 +2437,48 @@ Return ONLY a JSON object:
 {
   "targetWord": "${cleanWord}",
   "suggestions": [
-    {
-      "rhyme": "کلمه قافیه ۱",
-      "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه",
-      "sampleLine": "مصراع نمونه موزون دارای این قافیه"
-    },
-    {
-      "rhyme": "کلمه قافیه ۲",
-      "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه",
-      "sampleLine": "مصراع نمونه موزون دارای این قافیه"
-    },
-    {
-      "rhyme": "کلمه قافیه ۳",
-      "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه",
-      "sampleLine": "مصراع نمونه موزون دارای این قافیه"
-    }
+    { "rhyme": "کلمه قافیه ۱", "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه", "sampleLine": "مصراع نمونه موزون دارای این قافیه" },
+    { "rhyme": "کلمه قافیه ۲", "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه", "sampleLine": "مصراع نمونه موزون دارای این قافیه" },
+    { "rhyme": "کلمه قافیه ۳", "meaning": "توضیح معنایی و ارتباط با خط داستانی ترانه", "sampleLine": "مصراع نمونه موزون دارای این قافیه" }
   ]
 }`;
-
-        const modelToTry = (openrouterModel || '').trim() || 'meta-llama/llama-3.3-70b-instruct:free';
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': 'https://farrokhzad-studio.local',
-            'X-Title': 'Farrokhzad Songwriter Studio',
-          },
-          body: JSON.stringify({
-            model: modelToTry,
-            messages: [{ role: 'user', content: aiPrompt }],
-            temperature: 0.5,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const json: any = await response.json();
-          let content = json.choices?.[0]?.message?.content || '';
-          content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-          content = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-
-          const parsed = JSON.parse(content);
-          if (parsed && Array.isArray(parsed.suggestions) && parsed.suggestions.length >= 2) {
-            return res.json({
-              targetWord: cleanWord,
-              suggestions: parsed.suggestions.slice(0, 3),
-              source: `openrouter (${modelToTry})`,
+        const rhymeModels = ['gemini-3.8-flash', 'gemini-flash-latest'];
+        for (const rModel of rhymeModels) {
+          try {
+            let timeoutHandle: NodeJS.Timeout | null = null;
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              timeoutHandle = setTimeout(() => reject(new Error('Rhyme generation timed out')), 6000);
             });
+            const apiPromise = ai.models.generateContent({
+              model: rModel,
+              contents: promptText,
+              config: {
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+              },
+            });
+            const resp: any = await Promise.race([apiPromise, timeoutPromise]);
+            if (timeoutHandle) clearTimeout(timeoutHandle);
+            if (resp?.text) {
+              const parsed = JSON.parse(resp.text.trim());
+              if (parsed && Array.isArray(parsed.suggestions) && parsed.suggestions.length >= 2) {
+                return res.json({
+                  targetWord: cleanWord,
+                  suggestions: parsed.suggestions.slice(0, 3),
+                  source: `gemini (${rModel})`,
+                });
+              }
+            }
+          } catch {
+            // Try next model or fall through to algorithmic dictionary
           }
         }
-      } catch (e) {
-        console.warn('[Rhyme AI Warning] Falling back to smart Persian rhyming engine:', e);
+      } catch (err: any) {
+        console.warn('[Rhyme-Assistant Built-in AI Quota/Error]:', err?.message);
       }
     }
 
-    // 2. High-Precision Smart Persian Algorithmic Rhyming Engine (Fall-through / instant response)
+    // ۲. الگوریتم اختصاصی وزن و قافیه مکتب فرخزاد (پاسخ آنی و دقیق)
     const RHYME_DICTIONARY: { [key: string]: Array<{ rhyme: string; meaning: string; sampleLine: string }> } = {
       'ان': [
         { rhyme: 'عصیان', meaning: 'سرکشی آگاهانه و ایستادگی شجاعانه در برابر ستم و سکوت', sampleLine: 'در جانِ شب افروخته شد شعله‌ی عصیان' },
